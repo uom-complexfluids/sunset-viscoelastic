@@ -49,6 +49,26 @@ program datgen
 
   select case (itest) 
 !! ------------------------------------------------------------------------------------------------
+ case(0) 
+ !! DO NOTHING. THIS CASE IS A GRID
+     yl=2.0d0*2.0d0*pi*1.0d0
+     xl=yl/1.0d0
+     h0 = xl/12.0d0
+     dx0=yl/(150.0d0)
+     xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
+     
+     nb_patches = 4
+     allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
+     allocate(b_type(nb_patches))
+     b_type(:) = (/ 3, 3, 3, 3/)  
+     b_node(1,:) = (/-0.5d0*xl, -0.5d0*yl /)
+     b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
+     b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
+     b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
+     dxmin = dx0/1.0d0
+     dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     dx_wallio=dxmin     
+   
 !! ------------------------------------------------------------------------------------------------
   case(1) !! Gap between cylinders test
  
@@ -90,8 +110,8 @@ program datgen
      h0=D_cyl/2.0d0      !cylinder radius
      yl=SovD*D_cyl ! box height
      xl=SovD*D_cyl ! channel length
-     dx0=D_cyl/160.0       !75
-     xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
+     dx0=D_cyl/60.0       !75
+     xbcond_L=1;xbcond_U=1;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
      allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
@@ -112,16 +132,16 @@ program datgen
      end do
 
      !! dx0/2.0d0, 1.5d0*dx0
-     dxmin = dx0/3.2d0 !!2.0d0
+     dxmin = dx0/1.0d0 !!2.0d0
      dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin      
 !! ------------------------------------------------------------------------------------------------
   case(3) !! Kolmogorov flow (currently set for Miguel's work)
 
-     yl=1.0d0*2.0d0*pi*1.0d0
+     yl=2.0d0*2.0d0*pi*1.0d0
      xl=yl/1.0d0
      h0 = xl/12.0d0
-     dx0=yl/(160.0d0)
+     dx0=yl/(150.0d0)
      xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
      
      nb_patches = 4
@@ -132,29 +152,29 @@ program datgen
      b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
      b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
      b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
-     nb_blobs = 16;n_blob_coefs=6
+     nb_blobs = 1;n_blob_coefs=6
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-!     blob_centre(1,:)=(/1000.0d0*xl/8.0d0,0.0d0*yl/8.0d0/); !! Central
-     blob_centre(1,:)=(/-3.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
-     blob_centre(2,:)=(/-1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
-     blob_centre(3,:)=(/ 1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
-     blob_centre(4,:)=(/ 3.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central               
+     blob_centre(1,:)=(/1000.0d0*xl/8.0d0,0.0d0*yl/8.0d0/); !! Central
+!     blob_centre(1,:)=(/-3.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(2,:)=(/-1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(3,:)=(/ 1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(4,:)=(/ 3.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central               
 
-     blob_centre(5,:)=(/-3.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
-     blob_centre(6,:)=(/-1.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
-     blob_centre(7,:)=(/ 1.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
-     blob_centre(8,:)=(/ 3.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central               
+!     blob_centre(5,:)=(/-3.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(6,:)=(/-1.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(7,:)=(/ 1.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(8,:)=(/ 3.0d0*xl/8.0d0,1.0d0*yl/8.0d0/); !! Central               
 
-     blob_centre(9,:) =(/-3.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
-     blob_centre(10,:)=(/-1.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
-     blob_centre(11,:)=(/ 1.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
-     blob_centre(12,:)=(/ 3.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central               
+!     blob_centre(9,:) =(/-3.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(10,:)=(/-1.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(11,:)=(/ 1.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central
+!     blob_centre(12,:)=(/ 3.0d0*xl/8.0d0,-1.0d0*yl/8.0d0/); !! Central               
 
-     blob_centre(13,:)=(/-3.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
-     blob_centre(14,:)=(/-1.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
-     blob_centre(15,:)=(/ 1.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
-     blob_centre(16,:)=(/ 3.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central               
+!     blob_centre(13,:)=(/-3.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(14,:)=(/-1.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(15,:)=(/ 1.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central
+!     blob_centre(16,:)=(/ 3.0d0*xl/8.0d0,-3.0d0*yl/8.0d0/); !! Central               
      
      do i=1,nb_blobs     
         blob_coeffs(i,:)=(/h0,0.0d0,0.0d0,0.0d0,0.0d0,0.0d0/);blob_rotation(i)=0.4d0
@@ -289,13 +309,13 @@ case(8) !! Minimal unit cell of isometric cylinder array
   !! Porosity 1/4 - sqrt(0.6667*pi/sqrt(3))   (2/3)
   
 
-     SovD = sqrt((2.0d0/3.0d0)*pi/(sqrt(3.0d0)))!sqrt((2.0d0/3.0d0)*pi/sqrt(3.0d0)) 
+     SovD = 2.0d0!sqrt((2.0d0/3.0d0)*pi/(sqrt(3.0d0)))!sqrt((2.0d0/3.0d0)*pi/sqrt(3.0d0)) 
      D_cyl = 1.0d0!1.0d0/(SovD-1.0d0)
      S_cyl = D_cyl*SovD
      h0=D_cyl/2.0d0      !cylinder radius
      yl=sqrt(3.0d0)*S_cyl ! box height
      xl=S_cyl ! channel length
-     dx0=D_cyl/100.0d0!499.50       !250
+     dx0=D_cyl/28.8d0!499.50       !250
      xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
      
      nb_patches = 4
@@ -333,8 +353,8 @@ case(8) !! Minimal unit cell of isometric cylinder array
 !     blob_coeffs(4,:) = blob_coeffs(3,:);blob_rotation(4) = blob_rotation(3)
 
 
-     dxmin = dx0/3.0d0  !! 2.0d0, 1.5d0
-     dx_wall=dxmin;dx_in=1.33d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     dxmin = dx0/2.0d0  !! 2.0d0, 1.5d0
+     dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin                
 !! ------------------------------------------------------------------------------------------------
 case(9) !!Twice minimal unit of case 8
@@ -518,7 +538,7 @@ case(11) !! Ellipse or something
      blob_centre(1,:) = (/0.0d0,0.0d0/)  
 
 
-     !! Coefficients (if we want (e.g.) hexagonal obstacles). Load into blob 1, then copy to other blobs
+     !! Coefficients
      do i=1,n_blob_coefs
         read(191,*) blob_coeffs(1,i)
         blob_coeffs(1,i) = blob_coeffs(1,i)*h0!*1.1083
@@ -536,7 +556,6 @@ case(11) !! Ellipse or something
 !! ------------------------------------------------------------------------------------------------     
 end select
 !! ------------------------------------------------------------------------------------------------     
-     
      !! Create the domain
      call make_boundary_edge_vectors
      xb_min = minval(b_node(:,1));xb_max = maxval(b_node(:,1));yb_min = minval(b_node(:,2));yb_max = maxval(b_node(:,2))
@@ -545,7 +564,8 @@ end select
      call make_boundary_particles
      call make_boundary_blobs               
      ipart = nb   
-         
+
+if(itest.ne.0) then              
      !! Initialise a line of potential dot points   
      nsearch = ceiling(yb_max-yb_min)/dxmin/2.0d0
      allocate(pdp_x(10*nsearch),pdp_y(10*nsearch))
@@ -731,7 +751,20 @@ end select
      dx0 = maxval(dxp(1:npfb))
      
      write(*,*) 'nb,npfb= ', nb,npfb,nbio
-
+else
+     !! THIS CASE JUST MAKES A GRID!
+     ipart=0
+     ii = floor(xl/dx0) !! Number in each dir.. (assuming square)
+     do i=1,ii
+        do j=1,ii
+           ipart = ipart + 1
+           xp(ipart) = b_node(1,1) + 0.5d0*dx0 + dble(i-1)*dx0
+           yp(ipart) = b_node(1,2) + 0.5d0*dx0 + dble(j-1)*dx0
+           dxp(ipart) = dx0
+        end do
+     end do  
+     npfb = ipart
+endif
 !! ------------------------------------------------------------------------------------------------
 !! Re-order nodes (from left to right)
   

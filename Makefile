@@ -19,6 +19,7 @@
 # tracers    Include some Lagrangian tracer particles (1) or don't (0)                 (default: 0)
 # gsks       Add some Giesekus quadratic non-linearity (1) or don't (0)                (default: 0)
 # frcng      Add some hard-coded body force (1) or don't (0)                           (default: 0)
+# mltspc     Multi-species (1) or not (0)                                              (default: 0)
 # -------------------------------------------------------------------------------------------------
 #
 # EXAMPLE USAGE:
@@ -72,6 +73,10 @@ endif
 # Restart from dump file.
 ifeq ($(frcng), 1)
 FFLAGS += -Dfrcng
+endif
+
+ifeq ($(mltspc), 1)
+FFLAGS += -Dmltspc
 endif
 
 # Non-Newtonian
@@ -154,14 +159,14 @@ SRC_DIR  := $(addprefix source/,$(SUB_DIRS))
 # identify object files
 #parameters come first, as almost everything depends on them.
 OBJ_FILES := obj/kind_parameters.o obj/common_parameter.o obj/common_vars.o
-OBJ_FILES += obj/rbfs.o obj/mirror_boundaries.o obj/derivatives.o 
+OBJ_FILES += obj/rbfs.o obj/mirror_boundaries.o obj/derivatives.o obj/svdlib.o
 OBJ_FILES += obj/mpi_transfers.o obj/interpolation.o
 OBJ_FILES += obj/neighbours.o obj/output.o obj/statistics.o obj/tracer_particles.o
-OBJ_FILES += obj/turbulence.o obj/svdlib.o obj/conf_transforms.o
+OBJ_FILES += obj/turbulence.o obj/conf_transforms.o
 OBJ_FILES += obj/load_data.o obj/setup_domain.o obj/setup_flow.o
 OBJ_FILES += obj/labf.o obj/fd.o
 OBJ_FILES += obj/characteristic_boundaries.o 
-OBJ_FILES += obj/rhs.o obj/rhs_di.o obj/rhs_lc.o obj/rhs_ssr.o
+OBJ_FILES += obj/rhs.o obj/rhs_di.o obj/rhs_lc.o obj/rhs_ssr.o obj/rhs_fenep.o
 OBJ_FILES += obj/step.o
 OBJ_FILES += $(foreach sdir,$(SRC_DIR),$(patsubst $(sdir)/%.F90,obj/%.o,$(wildcard $(sdir)/*.F90)))
 
@@ -183,7 +188,7 @@ clean:
 	rm -vf ./data_out/fields*
 	rm -vf ./data_out/nodes*
 	rm -vf ./data_out/flame*
-	rm -vf ./data_out/time.out
+	rm -vf ./data_out/*.out
 	rm -vf ./data_out/statistics/*.out
 	rm -vf ./paraview_files/LAYER*
 	rm -vf ./paraview_files/*.vtu	

@@ -21,13 +21,13 @@ module common_vars
   real(rkind), dimension(ithree) :: grav !! Gravity    
   real(rkind) :: rho_char
   real(rkind) :: dt_out,dt_out_stats,dt_out_tracers !! Time interval between outputs  
-  real(rkind) :: Re,Wi,Ma,beta,Sc,epsPTT,fenep_l2,giesekus_a
+  real(rkind) :: Re,Wi,Ma,beta,Sc,epsPTT,fenep_l2,giesekus_a,kappa,Mdiff
   real(rkind) :: csq
   real(rkind) :: u_inflow_start,u_inflow_end
   real(rkind) :: ramp_time
   
   !! Evolved fluid quantities
-  real(rkind), dimension(:), allocatable, target :: rou,rov,row,ro
+  real(rkind), dimension(:), allocatable, target :: rou,rov,row,ro,roY
   real(rkind), dimension(:),allocatable :: alpha_out
   real(rkind), dimension(:),allocatable :: psixx,psixy,psiyy,psixz,psiyz,psizz
      
@@ -39,7 +39,7 @@ module common_vars
   real(rkind) :: meanKE
   
   !! Transport and thermodynamic properties
-  real(rkind) :: visc_solvent,visc_polymeric,visc_total,lambda,Mdiff
+  real(rkind) :: visc_solvent,visc_polymeric,visc_total,lambda
   
   !! Velocity gradients  
   real(rkind),dimension(:,:),allocatable :: gradu,gradv,gradw
@@ -48,6 +48,7 @@ module common_vars
   !! Right-hand-sides
   real(rkind),dimension(:),allocatable :: rhs_ro,rhs_rou,rhs_rov,rhs_row
   real(rkind),dimension(:),allocatable :: rhs_xx,rhs_xy,rhs_yy,rhs_xz,rhs_yz,rhs_zz
+  real(rkind),dimension(:),allocatable :: rhs_roY
     
   !! Discretisation properties
   real(rkind), dimension(:,:), allocatable, target :: rp,rnorm
@@ -113,7 +114,7 @@ module common_vars
   real(rkind),dimension(:),allocatable :: u_inflow_local
   
   !! Flags for flux-zero-ing on boundaries
-  logical,dimension(:),allocatable :: znf_vdiff,znf_vtdiff  
+  logical,dimension(:),allocatable :: znf_vdiff,znf_vtdiff,znf_mdiff  
   
   !! Profiling and openMP parallelisation
   real(rkind) ts_start,ts_end,t_run,t_per_dt,t_last_X

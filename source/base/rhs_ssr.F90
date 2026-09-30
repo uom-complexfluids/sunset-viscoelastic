@@ -246,8 +246,10 @@ contains
 #endif        
  
 #ifdef frcng
-        body_force_u = body_force_u + (64.0d0*visc_total/rho_char)*cos(8.0d0*rp(i,2)) !! 16,4                       
-!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+Mdiff*beta*Wi)/(one+Mdiff*Wi)  !! Miguel's forcing
+        body_force_u = body_force_u + (16.0d0*visc_total/rho_char)*cos(4.0d0*rp(i,2)) !! 16,4
+        body_force_v = body_force_v + (16.0d0*visc_total/rho_char)*cos(4.0d0*rp(i,1)) !! 16,4 
+
+!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+kappa*beta*Wi)/(one+kappa*Wi)  !! Miguel's forcing
 #endif
                                                 
         !! RHS 
@@ -375,7 +377,7 @@ contains
      !! Laplacian for conformation tensor components
      allocate(lapbxx(npfb),lapbxy(npfb),lapbyy(npfb),lapbzz(npfb));lapbxx=zero;lapbxy=zero;lapbyy=zero;lapbzz=zero
      allocate(lapbxz(npfb),lapbyz(npfb));lapbxz=zero;lapbyz=zero
-     if(Mdiff.ne.zero) then
+     if(kappa.ne.zero) then
         call calc_laplacian_transverse_only_on_bound(Cxx,lapbxx)  !! Actually holds lap(ln(bxx)) for now
         call calc_laplacian_transverse_only_on_bound(Cxy,lapbxy)
         call calc_laplacian_transverse_only_on_bound(Cyy,lapbyy)  !! Actually holds lap(ln(byy)) for now 
@@ -435,7 +437,7 @@ contains
         hyy = hyy/detb   
                 
         !! Contribution to anti-symmetric matrix a due to diffusivity (do we need this term?)
-        A_diff = zero!wsMdiff*(hxy-hyx)      
+        A_diff = zero!wskappa*(hxy-hyx)      
                 
         !! Anti-symmetric matrix component: a12
         a12 =  (one/(bxx+byy))*( gradu_local(1)*bxy - gradv_local(1)*bxx &
@@ -451,9 +453,9 @@ contains
         !! Source terms        
         !! sPTT source terms and diffusion as in evolution eqn for c.
         fr = (one - epsPTT*three + epsPTT*(cxx(i)+cyy(i)+czz(i)))/lambda !! scalar function
-        sxx = -fr*(cxx(i) - one) +Mdiff*lapbxx(i)
-        sxy = -fr*cxy(i)+Mdiff*lapbxy(i)
-        syy = -fr*(cyy(i) - one) +Mdiff*lapbyy(i)
+        sxx = -fr*(cxx(i) - one) +kappa*lapbxx(i)
+        sxy = -fr*cxy(i)+kappa*lapbxy(i)
+        syy = -fr*(cyy(i) - one) +kappa*lapbyy(i)
         
         !! Convert source terms from c-equation to b-equation
         oodeta = one/(four*detb*(bxx+byy))
@@ -462,9 +464,9 @@ contains
         csyy = oodeta*(two*bxy*bxy*sxx - four*bxx*bxy*sxy + (two*detb + two*bxx*bxx)*syy)/byy       
                                       
         !! Add diffusion terms to source terms
-!        csxx = csxx + Mdiff*(half*lapbxx(i) + hxx)/bxx
-!        csxy = csxy + Mdiff*(half*lapbxy(i) + hxy)
-!        csyy = csyy + Mdiff*(half*lapbyy(i) + hyy)/byy    
+!        csxx = csxx + kappa*(half*lapbxx(i) + hxx)/bxx
+!        csxy = csxy + kappa*(half*lapbxy(i) + hxy)
+!        csyy = csyy + kappa*(half*lapbyy(i) + hyy)/byy    
     
         
         !! RHS 
@@ -553,7 +555,7 @@ contains
            hyy = hyy/detb   
                 
            !! Contribution to anti-symmetric matrix a due to diffusivity (do we need this term?)
-           A_diff = zero*Mdiff*(hxy-hyx)      
+           A_diff = zero*kappa*(hxy-hyx)      
                 
            !! Anti-symmetric matrix component: a12
            a12 =  (one/(bxx+byy))*( gradu_local(1)*bxy - gradv_local(1)*bxx &
@@ -572,9 +574,9 @@ contains
            csyy = (half*fr/lambda)*(bxx/(bxx*byy-bxy*bxy) - byy)/byy    
                                 
            !! Add diffusion terms to source terms
-           csxx = csxx + Mdiff*(half*lapbxx(i) + hxx)/bxx
-           csxy = csxy + Mdiff*(half*lapbxy(i) + hxy)
-           csyy = csyy + Mdiff*(half*lapbyy(i) + hyy)/byy   
+           csxx = csxx + kappa*(half*lapbxx(i) + hxx)/bxx
+           csxy = csxy + kappa*(half*lapbxy(i) + hxy)
+           csyy = csyy + kappa*(half*lapbyy(i) + hyy)/byy   
 
 
                

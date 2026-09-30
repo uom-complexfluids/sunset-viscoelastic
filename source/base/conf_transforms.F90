@@ -512,7 +512,11 @@ contains
 
 
      !! Eigenvalues and eigenvectors of C
+#ifndef dim3     
      call eigens(c_xx,c_xy,c_yy,Lvec,Rmat)
+     write(6,*) "SSR NOT CODED FOR 3D. STOPPING"
+     stop
+#endif     
 
      RTmat = transpose(Rmat)
      

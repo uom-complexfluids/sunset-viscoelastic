@@ -285,6 +285,10 @@ contains
 #else                          
         ro(j) = ro(i)
 #endif        
+
+        !! Mirror mass fraction (including pressure gradients as necessary)
+        roY(j) = roY(i)*ro(j)/ro(i)
+
         !! Mirror velocities        
         if(vrelation(j).eq.1)then
            rou(j) = rou(i)
@@ -347,7 +351,7 @@ contains
 
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart
+     segment_time_local(6) = segment_time_local(6) + segment_tend - segment_tstart
      return
   end subroutine reapply_mirror_bcs
 !! ------------------------------------------------------------------------------------------------ 

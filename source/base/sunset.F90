@@ -24,6 +24,7 @@ program sunset
   use mpi
 #endif  
   use tracer_particles
+  use interpolation
   implicit none
 
   integer(ikind) :: n_out,m_out,o_out
@@ -49,6 +50,7 @@ program sunset
 
   !! Build the neighbour lists
   call find_neighbours
+!  call initialise_interp_line              
 
   !! Calculate LABFM and FD weights for all derivatives and filters
   call calc_labf_weights
@@ -87,21 +89,22 @@ program sunset
      !! Adjust the time-step
      call set_tstep      !! CFL type stability based dt    
      call set_tstep_PID
- 
+
      !! Perform one time step 
 !     call step_rk3_4S_2R
      call advect_tracer_particles
      call step_rk3_4S_2R_EE     
 
-     !! Profiling and write some things to screen
-     segment_tend_main = omp_get_wtime()
-     segment_time_local(11) = segment_time_local(11) + segment_tend_main - segment_tstart_main
      itime = itime + 1
      call output_to_screen
 
      !! Call routines to evaluate global statistics and adjust forcing terms if desired
      call tracer_output(o_out)
      call statistics_control(m_out)
+
+     !! Profiling and write some things to screen
+     segment_tend_main = omp_get_wtime()
+     segment_time_local(1) = segment_time_local(1) + segment_tend_main - segment_tstart_main
     
   end do
   !! END MAIN TIME LOOP -----------------------------------------------
@@ -132,7 +135,7 @@ subroutine deallocate_everything
   deallocate(rp,s,vol,h)
   
   !! Primary properties
-  deallocate(rou,rov,row,ro)
+  deallocate(rou,rov,row,ro,cxx,cxy,cyy,czz,psixx,psixy,psiyy,psizz)
   
   !! Secondary properties & transport vars
   deallocate(p,u,v,w)

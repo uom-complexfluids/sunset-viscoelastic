@@ -261,7 +261,7 @@ contains
  
 #ifdef frcng
         body_force_u = body_force_u + (64.0d0*visc_total/rho_char)*cos(8.0d0*rp(i,2)) !! 16,4                       
-!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+Mdiff*beta*Wi)/(one+Mdiff*Wi)  !! Miguel's forcing
+!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+kappa*beta*Wi)/(one+kappa*Wi)  !! Miguel's forcing
 #endif
                                                 
         !! RHS 
@@ -396,7 +396,7 @@ contains
      !! Laplacian for conformation tensor components
      allocate(lapCxx(npfb),lapCxy(npfb),lapCyy(npfb))
      allocate(lapCxz(npfb),lapCyz(npfb),lapCzz(npfb))
-     if(Mdiff.ne.zero) then
+     if(kappa.ne.zero) then
         call calc_laplacian_transverse_only_on_bound(Cxx,lapCxx)  
         call calc_laplacian_transverse_only_on_bound(Cxy,lapCxy)
         call calc_laplacian_transverse_only_on_bound(Cyy,lapCyy)            
@@ -465,13 +465,13 @@ contains
 #endif      
        
         !! Construct the RHS
-        rhs_xx(i) = adxx + ucxx + sxx + Mdiff*lapcxx(i)
-        rhs_xy(i) = adxy + ucxy + sxy + Mdiff*lapcxy(i)
-        rhs_yy(i) = adyy + ucyy + syy + Mdiff*lapcyy(i)
-        rhs_zz(i) = adzz + uczz + szz + Mdiff*lapczz(i)                
+        rhs_xx(i) = adxx + ucxx + sxx + kappa*lapcxx(i)
+        rhs_xy(i) = adxy + ucxy + sxy + kappa*lapcxy(i)
+        rhs_yy(i) = adyy + ucyy + syy + kappa*lapcyy(i)
+        rhs_zz(i) = adzz + uczz + szz + kappa*lapczz(i)                
 #ifdef dim3
-        rhs_xz(i) = adxz + ucxz + sxz + Mdiff*lapcxz(i)
-        rhs_yz(i) = adyz + ucyz + syz + Mdiff*lapcyz(i)
+        rhs_xz(i) = adxz + ucxz + sxz + kappa*lapcxz(i)
+        rhs_yz(i) = adyz + ucyz + syz + kappa*lapcyz(i)
 #endif        
      end do
      !$omp end parallel do
@@ -571,13 +571,13 @@ contains
            
            
               !! Construct the RHS
-              rhs_xx(i) = ucxx + sxx + Mdiff*lapcxx(i)
-              rhs_xy(i) = ucxy + sxy + Mdiff*lapcxy(i)
-              rhs_yy(i) = ucyy + syy + Mdiff*lapcyy(i)          
+              rhs_xx(i) = ucxx + sxx + kappa*lapcxx(i)
+              rhs_xy(i) = ucxy + sxy + kappa*lapcxy(i)
+              rhs_yy(i) = ucyy + syy + kappa*lapcyy(i)          
 #ifdef dim3
-              rhs_xz(i) = ucxz + sxz + Mdiff*lapcxz(i)
-              rhs_yz(i) = ucyz + syz + Mdiff*lapcyz(i)
-              rhs_zz(i) = uczz + szz + Mdiff*lapczz(i)          
+              rhs_xz(i) = ucxz + sxz + kappa*lapcxz(i)
+              rhs_yz(i) = ucyz + syz + kappa*lapcyz(i)
+              rhs_zz(i) = uczz + szz + kappa*lapczz(i)          
 #endif              
            else  !! Inflow/outflow
 

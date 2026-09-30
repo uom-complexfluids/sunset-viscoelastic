@@ -21,7 +21,7 @@ program main
       
   real,allocatable,dimension(:):: xp,zp,up,vp,wp,ro,vort,h,Temp,yp
   real,allocatable,dimension(:):: alpha,p,cxx,cxy,cyy,cxz,cyz,czz,Qcrit
-  real,allocatable,dimension(:,:) :: Yspec
+  real,allocatable,dimension(:) :: Y
   integer,allocatable,dimension(:) :: processor,node_type
   real time(i_PART_counter_max), DT(i_PART_counter_max)
   integer np_all(i_PART_counter_max), IT(i_PART_counter_max)
@@ -47,6 +47,7 @@ program main
   allocate(cxy(np_max))
   allocate(cyy(np_max)) 
   allocate(czz(np_max))
+  allocate(Y(np_max))
 #if numdims==3  
   allocate(cxz(np_max))
   allocate(cyz(np_max))
@@ -203,7 +204,7 @@ program main
                                   up(i),vp(i),wp(i), &
                                   vort(i),Qcrit(i),alpha(i), &
                                   cxx(i),cxy(i),cyy(i), &
-                                  cxz(i),cyz(i),czz(i)
+                                  cxz(i),cyz(i),czz(i),Y(i)
               processor(i) = iproc
               npp=npp+1
            enddo
@@ -212,7 +213,8 @@ program main
               read(ifi,*,end=300) ro(i), &
                                   up(i),vp(i), &
                                   vort(i),Qcrit(i),alpha(i), &
-                                  cxx(i),cxy(i),cyy(i),czz(i)
+                                  cxx(i),cxy(i),cyy(i),czz(i), &
+                                  Y(i)
               processor(i) = iproc
               npp=npp+1
            enddo
@@ -318,6 +320,16 @@ program main
      enddo
      string3 = '    </DataArray>'
      write(ifo,202) string3
+     
+     !! Yspec
+     string1 = '    <DataArray type='//DQ//'Float32'//DQ//' Name='//DQ//'Y'//DQ// &
+               ' format='//DQ//'ascii'//DQ//'>'
+     write(ifo,202)string1
+     do ii=1,np
+        write(ifo,*)Y(ii)
+     enddo
+     string3 = '    </DataArray>'
+     write(ifo,202) string3     
      
      !! Cxx
      string1 = '    <DataArray type='//DQ//'Float32'//DQ//' Name='//DQ//'Cxx'//DQ// &

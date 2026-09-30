@@ -328,16 +328,19 @@ contains
      
      !! Setup the flags for flux-zeroing (ZNF=zero-normal-flux)
      if(nb.ne.0)then
-        allocate(znf_vdiff(nb),znf_vtdiff(nb))
+        allocate(znf_vdiff(nb),znf_vtdiff(nb),znf_mdiff(nb))
         do j=1,nb
            i=boundary_list(j)
            if(node_type(i).eq.0) then !! Walls
+              znf_mdiff(j) = .false.
               znf_vdiff(j) = .false.
               znf_vtdiff(j) = .false.              
            else if(node_type(i).eq.1) then !! Inflow
+              znf_mdiff(j) = .false.
               znf_vdiff(j) = .true.     !! No normal viscous diffusion through inflows                
               znf_vtdiff(j) = .false.              
            else if(node_type(i).eq.2) then !! Outflow
+              znf_mdiff(j) = .true.
               znf_vdiff(j) = .false.      
               znf_vtdiff(j) = .true.      !! No tangential viscous diffusion through outflow                            
 
@@ -427,7 +430,7 @@ contains
                            
 !write(6,*) "sizes",iproc,npfb,np_nohalo,np   
      call initialise_tracer_particles   
-     call initialise_flux_points           
+     call initialise_flux_points    
                  
      return
   end subroutine refine_and_finalise_domain

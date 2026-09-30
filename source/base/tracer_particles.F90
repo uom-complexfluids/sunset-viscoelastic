@@ -42,7 +42,7 @@ contains
      character(70) :: fname
 
      !! How many?
-     N_tracers = 100 !! For now, as many as there are processors
+     N_tracers = 5 
      allocate(tracer_rp(N_tracers,ithree),tracer_u(N_tracers,ithree))
 #ifdef dim3
      allocate(tracer_c(N_tracers,2*ithree))
@@ -67,7 +67,7 @@ contains
         !! Pick a neighbour
         tracer_neighbour(iproc+1) = trseed     
         tracer_rp(iproc+1,:)=rp(trseed,:) 
-     else if(.true.) then
+     else if(.false.) then
         !! Lots of tracers starting in proc 0
         if(iproc.eq.1) then
            tracer_proc(:) = iproc
@@ -95,6 +95,12 @@ contains
               tracer_rp(i,2)=rp(trseed,2) + tmp_y
               tracer_rp(i,3)=rp(trseed,3)                            
            end do
+           tracer_neighbour(1) = 1047;tracer_rp(1,:)=rp(1047,:);tracer_rp(1,1)=-one+0.005d0;tracer_rp(1,2)=0.85
+           tracer_neighbour(2) = 1516;tracer_rp(2,:)=rp(1516,:);tracer_rp(2,1)=-one+0.005d0;tracer_rp(2,2)=0.9
+           tracer_neighbour(3) = 1991;tracer_rp(3,:)=rp(1991,:);tracer_rp(3,1)=-one+0.005d0;tracer_rp(3,2)=0.95
+           tracer_neighbour(4) = 2397;tracer_rp(4,:)=rp(2397,:);tracer_rp(4,1)=-one+0.005d0;tracer_rp(4,2)=1.0
+           tracer_neighbour(5) = 2959;tracer_rp(5,:)=rp(2959,:);tracer_rp(5,1)=-one+0.005d0;tracer_rp(5,2)=1.05
+           
         endif
      end if
         

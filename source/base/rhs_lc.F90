@@ -261,7 +261,7 @@ contains
  
 #ifdef frcng
         body_force_u = body_force_u + (64.0d0*visc_total/rho_char)*cos(8.0d0*rp(i,2)) !! 16,4                       
-!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+Mdiff*beta*Wi)/(one+Mdiff*Wi)  !! Miguel's forcing
+!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+kappa*beta*Wi)/(one+kappa*Wi)  !! Miguel's forcing
 #endif                     
                                                 
         !! RHS 

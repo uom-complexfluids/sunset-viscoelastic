@@ -47,7 +47,7 @@ contains
      !! Acoustic reflection
      Lchar(5)= Lchar(1) !+ tmpro*c*dot_product(rnorm(i,:),grav+driving_force/tmpro) 
 
-       
+     Lchar(6) = zero       
 
   end subroutine specify_characteristics_isothermal_wall
 !! ------------------------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ contains
      Lchar(5) = (u(i)-u_inflow_local(j))*nscbc_coeff*(one-u(i)/c)*c*c*one/L_domain_x &     !! Track u_inflow
               - half*(v(i)*gradb_p(2)+p(i)*gradb_v(2)+tmpro*c*v(i)*gradb_u(2)) &    !! transverse 1 conv. terms
               - half*(w(i)*gradb_p(3)+p(i)*gradb_w(3)+tmpro*c*w(i)*gradb_u(3))      !! transverse 2 conv. terms 
-  
+     Lchar(6) = zero
                  
          
 
@@ -105,7 +105,7 @@ contains
      Lchar(3) = zero  !! v,w are prescribed
      Lchar(4) = zero
      Lchar(5) = Lchar(1)  !-tmpro*c*du_inflowdt !! Acoustically reflecting
- 
+     Lchar(6) = zero
                         
          
 
@@ -131,18 +131,23 @@ contains
      c=sqrt(csq)     
 
      if(u(i).gt.zero) then !! Inflow options
-    
         !Lchar(1) is outgoing, so doesn't require modification
         Lchar(2) = zero
-        Lchar(3) = v(i)*nscbc_coeff*c/L_domain_x       !! track v=zero
-        Lchar(4) = w(i)*nscbc_coeff*c/L_domain_x       !! track w=zero
-        Lchar(5) = (u(i)-u_inflow_local(j))*nscbc_coeff*(one-u(i)/c)*c*c*one/L_domain_x     !! Track u_inflow
+        Lchar(3) = v(i)*nscbc_coeff*c/L_domain_x &        !! track v=zero
+                 - v(i)*gradb_v(2) - w(i)*gradb_v(3) - gradb_p(2)/ro(i) !! transverse terms
+        Lchar(4) = w(i)*nscbc_coeff*c/L_domain_x &        !! track w=zero
+                 + rhs_row(i)                           !! rhs_w contains transverse and visc terms needed
+        Lchar(5) = (u(i)-u_inflow_local(j))*nscbc_coeff*(one-u(i)/c)*c*c*one/L_domain_x &     !! Track u_inflow
+                 - half*(v(i)*gradb_p(2)+p(i)*gradb_v(2)+tmpro*c*v(i)*gradb_u(2)) &    !! transverse 1 conv. terms
+                 - half*(w(i)*gradb_p(3)+p(i)*gradb_w(3)+tmpro*c*w(i)*gradb_u(3))      !! transverse 2 conv. terms 
+        Lchar(6) = zero    
      else               !! Outflow options
         !Lchar(1) is outgoing, unchanged
         Lchar(2) = zero   !! No entropy in isothermal flows
         !Lchar(3) is outgoing
         !Lchar(4) is outgoing
         Lchar(5) = (p(i)-p_inflow)*nscbc_coeff*c*(one)/two/L_domain_x     !! track p_outflow
+        !Lchar(6) is outgoing
      end if       
              
          
@@ -177,6 +182,7 @@ contains
      !Lchar(3) is outgoing
      !Lchar(4) is outgoing
      !Lchar(5) is outgoing
+     !Lchar(6) is outgoing
         
      !! Sometimes we have a little inflow at an outflow boundary. In this case, set Lchar(3)=Lchar(4)=zero
      !! to suppress shear 
@@ -184,6 +190,7 @@ contains
         Lchar(2)=zero !! no incoming entropy
         Lchar(3)=zero !! no incoming shear if outflow velocity is zero...
         Lchar(4)=zero
+        Lchar(6)=zero
      end if        
 
   end subroutine specify_characteristics_outflow
@@ -238,9 +245,11 @@ contains
            i=boundary_list(j)
            if(node_type(i).eq.1) then  !! It's an inflow-outflow type
               if(u(i).gt.zero) then     !! Incoming flow, set diffusive flux flags for inflow
+                 znf_mdiff(j) = .false. 
                  znf_vdiff(j) = .true.     !! No normal viscous diffusion through inflows                
                  znf_vtdiff(j) = .false.                           
               else                      !! Outgoing flow, set diffusive flux flags for outflow
+                 znf_mdiff(j) = .true.
                  znf_vdiff(j) = .false.      
                  znf_vtdiff(j) = .true.      !! No tangential viscous diffusion through outflow       
               end if
@@ -251,7 +260,7 @@ contains
 
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart  
+     segment_time_local(6) = segment_time_local(6) + segment_tend - segment_tstart  
   
      return
   end subroutine apply_time_dependent_bounds 
@@ -262,6 +271,8 @@ contains
      integer(ikind) :: i,j
      real(rkind) :: y
      real(rkind) :: u_inflow_mean
+
+     segment_tstart = omp_get_wtime()
      
      if(inflow_velocity_control.eq.1) then
      
@@ -288,6 +299,10 @@ contains
      else
         !! DO NOTHING. u_inflow_local(:) = u_char
      endif
+  
+     !! Profiling
+     segment_tend = omp_get_wtime()
+     segment_time_local(6) = segment_time_local(6) + segment_tend - segment_tstart 
   
      return
   end subroutine update_u_inflow

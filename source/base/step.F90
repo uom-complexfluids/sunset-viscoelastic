@@ -28,7 +28,7 @@ module step
          set_tstep_PID
   
   !! Error norms for RK3(2)4S[2R+]C scheme
-  real(rkind) :: enrm_ro,enrm_rou,enrm_rov,enrm_row
+  real(rkind) :: enrm_ro,enrm_rou,enrm_rov,enrm_row,enrm_roY
   real(rkind) :: enrm_xx,enrm_xy,enrm_yy,enrm_xz,enrm_yz,enrm_zz
   real(rkind),parameter :: outflow_error_scaling = one
   
@@ -47,7 +47,7 @@ contains
      !! Register 3 is rhs_ro, rhs_rou, rhs_rov etc
      integer(ikind) :: i,k
      real(rkind) :: time0
-     real(rkind),dimension(:),allocatable :: rou_reg1,rov_reg1,row_reg1,ro_reg1
+     real(rkind),dimension(:),allocatable :: rou_reg1,rov_reg1,row_reg1,ro_reg1,roY_reg1
      real(rkind),dimension(:),allocatable :: xx_reg1,xy_reg1,yy_reg1,xz_reg1,yz_reg1,zz_reg1     
      real(rkind),dimension(3) :: RKa
      real(rkind),dimension(4) :: RKb,RKc
@@ -57,8 +57,8 @@ contains
      RKb(:) = dt*rk3_4s_2r_b(:)
      RKc(:) = dt*rk3_4s_2r_c(:)     
 
-     allocate(rou_reg1(npfb),rov_reg1(npfb),ro_reg1(npfb),row_reg1(npfb))
-     allocate(rhs_rou(npfb),rhs_rov(npfb),rhs_ro(npfb),rhs_row(npfb))
+     allocate(rou_reg1(npfb),rov_reg1(npfb),ro_reg1(npfb),row_reg1(npfb),roY_reg1(npfb))
+     allocate(rhs_rou(npfb),rhs_rov(npfb),rhs_ro(npfb),rhs_row(npfb),rhs_roY(npfb))
      allocate(xx_reg1(npfb),xy_reg1(npfb),yy_reg1(npfb))
      allocate(rhs_xx(npfb),rhs_xy(npfb),rhs_yy(npfb))
      allocate(xz_reg1(npfb),yz_reg1(npfb),zz_reg1(npfb))
@@ -68,6 +68,7 @@ contains
      !$omp parallel do
      do i=1,npfb
         ro_reg1(i)=ro(i);rou_reg1(i)=rou(i);rov_reg1(i)=rov(i);row_reg1(i)=row(i)
+        roY_reg1(i)=roY(i)
 #ifndef di
         xx_reg1(i)=psixx(i);xy_reg1(i)=psixy(i);yy_reg1(i)=psiyy(i)
         xz_reg1(i)=psixz(i);yz_reg1(i)=psiyz(i);zz_reg1(i)=psizz(i)
@@ -98,7 +99,9 @@ contains
            ro(i) = ro_reg1(i) + RKa(k)*rhs_ro(i)
            rou(i) = rou_reg1(i) + RKa(k)*rhs_rou(i)
            rov(i) = rov_reg1(i) + RKa(k)*rhs_rov(i)
-           row(i) = row_reg1(i) + RKa(k)*rhs_row(i)    
+           row(i) = row_reg1(i) + RKa(k)*rhs_row(i)  
+           
+           roY(i) = roY_reg1(i) + RKa(k)*rhs_roY(i)  
 #ifndef di
            psixx(i) = xx_reg1(i) + RKa(k)*rhs_xx(i)
            psixy(i) = xy_reg1(i) + RKa(k)*rhs_xy(i)
@@ -120,6 +123,8 @@ contains
            rou_reg1(i) = rou_reg1(i) + RKb(k)*rhs_rou(i)
            rov_reg1(i) = rov_reg1(i) + RKb(k)*rhs_rov(i) 
            row_reg1(i) = row_reg1(i) + RKb(k)*rhs_row(i)    
+           
+           roY_reg1(i) = roY_reg1(i) + RKb(k)*rhs_roY(i)
 
            xx_reg1(i) = xx_reg1(i) + RKb(k)*rhs_xx(i)                   
            xy_reg1(i) = xy_reg1(i) + RKb(k)*rhs_xy(i)
@@ -163,6 +168,9 @@ contains
         rou(i) = rou_reg1(i) + RKb(4)*rhs_rou(i)
         rov(i) = rov_reg1(i) + RKb(4)*rhs_rov(i)
         row(i) = row_reg1(i) + RKb(4)*rhs_row(i)  
+        
+        roY(i) = roY_reg1(i) + RKb(4)*rhs_roY(i)
+        
 #ifndef di              
         psixx(i) = xx_reg1(i) + RKb(4)*rhs_xx(i)        
         psixy(i) = xy_reg1(i) + RKb(4)*rhs_xy(i)
@@ -182,7 +190,7 @@ contains
      !$omp end parallel do  
 
      !! Deallocation
-     deallocate(rou_reg1,rov_reg1,row_reg1,ro_reg1)
+     deallocate(rou_reg1,rov_reg1,row_reg1,ro_reg1,rhs_roY,roY_reg1)
      deallocate(rhs_rou,rhs_rov,rhs_row,rhs_ro)    
      deallocate(xx_reg1,xy_reg1,yy_reg1)
      deallocate(rhs_xx,rhs_xy,rhs_yy)
@@ -229,9 +237,9 @@ contains
      !! Register 4 is e_acc_ro,e_acc_rou,e_acc_rov - error accumulator
      integer(ikind) :: i,k
      real(rkind) :: time0,emax_conf,fr
-     real(rkind),dimension(:),allocatable :: rou_reg1,rov_reg1,row_reg1,ro_reg1
+     real(rkind),dimension(:),allocatable :: rou_reg1,rov_reg1,row_reg1,ro_reg1,roY_reg1
      real(rkind),dimension(:),allocatable :: xx_reg1,xy_reg1,yy_reg1,xz_reg1,yz_reg1,zz_reg1      
-     real(rkind),dimension(:),allocatable :: e_acc_ro,e_acc_rou,e_acc_rov,e_acc_row
+     real(rkind),dimension(:),allocatable :: e_acc_ro,e_acc_rou,e_acc_rov,e_acc_row,e_acc_roY
      real(rkind),dimension(:),allocatable :: e_acc_xx,e_acc_xy,e_acc_yy,e_acc_xz,e_acc_yz,e_acc_zz
      real(rkind),dimension(3) :: RKa
      real(rkind),dimension(4) :: RKb,RKbmbh,RKc
@@ -245,10 +253,10 @@ contains
      RKbmbh(:) = dt*rk3_4s_2r_bmbh(:)
      RKc(:) = dt*rk3_4s_2r_c(:)
 
-     allocate(rou_reg1(npfb),rov_reg1(npfb),ro_reg1(npfb),row_reg1(npfb))
-     allocate(rhs_rou(npfb),rhs_rov(npfb),rhs_ro(npfb),rhs_row(npfb))
-     allocate(e_acc_ro(npfb),e_acc_rou(npfb),e_acc_rov(npfb),e_acc_row(npfb))
-     e_acc_ro=zero;e_acc_rou=zero;e_acc_rov=zero;e_acc_row=zero
+     allocate(rou_reg1(npfb),rov_reg1(npfb),ro_reg1(npfb),row_reg1(npfb),roY_reg1(npfb))
+     allocate(rhs_rou(npfb),rhs_rov(npfb),rhs_ro(npfb),rhs_row(npfb),rhs_roY(npfb))
+     allocate(e_acc_ro(npfb),e_acc_rou(npfb),e_acc_rov(npfb),e_acc_row(npfb),e_acc_roY(npfb))
+     e_acc_ro=zero;e_acc_rou=zero;e_acc_rov=zero;e_acc_row=zero;e_acc_roY=zero
 
      allocate(xx_reg1(npfb),xy_reg1(npfb),yy_reg1(npfb))
      allocate(rhs_xx(npfb),rhs_xy(npfb),rhs_yy(npfb))
@@ -264,6 +272,7 @@ contains
      !$omp parallel do
      do i=1,npfb
         ro_reg1(i)=ro(i);rou_reg1(i)=rou(i);rov_reg1(i)=rov(i);row_reg1(i)=row(i)
+        roY_reg1(i) = roY(i)
 #ifndef di
         xx_reg1(i)=psixx(i);xy_reg1(i)=psixy(i);yy_reg1(i)=psiyy(i)
         xz_reg1(i)=psixz(i);yz_reg1(i)=psiyz(i);zz_reg1(i)=psizz(i)
@@ -296,7 +305,10 @@ contains
            ro(i) = ro_reg1(i) + RKa(k)*rhs_ro(i)
            rou(i) = rou_reg1(i) + RKa(k)*rhs_rou(i)
            rov(i) = rov_reg1(i) + RKa(k)*rhs_rov(i)
-           row(i) = row_reg1(i) + RKa(k)*rhs_row(i)    
+           row(i) = row_reg1(i) + RKa(k)*rhs_row(i)  
+           
+           roY(i) = roY_reg1(i) + RKa(k)*rhs_roY(i)
+             
 #ifndef di                  
            psixx(i) = xx_reg1(i) + RKa(k)*rhs_xx(i)
            psixy(i) = xy_reg1(i) + RKa(k)*rhs_xy(i)
@@ -317,7 +329,9 @@ contains
            ro_reg1(i) = ro_reg1(i) + RKb(k)*rhs_ro(i)
            rou_reg1(i) = rou_reg1(i) + RKb(k)*rhs_rou(i)
            rov_reg1(i) = rov_reg1(i) + RKb(k)*rhs_rov(i) 
-           row_reg1(i) = row_reg1(i) + RKb(k)*rhs_row(i)    
+           row_reg1(i) = row_reg1(i) + RKb(k)*rhs_row(i)  
+           
+           roY_reg1(i) = roY_reg1(i) + RKb(k)*rhs_roY(i)  
 
            xx_reg1(i) = xx_reg1(i) + RKb(k)*rhs_xx(i)                   
            xy_reg1(i) = xy_reg1(i) + RKb(k)*rhs_xy(i)
@@ -331,6 +345,8 @@ contains
            e_acc_rou(i) = e_acc_rou(i) + RKbmbh(k)*rhs_rou(i)
            e_acc_rov(i) = e_acc_rov(i) + RKbmbh(k)*rhs_rov(i)  
            e_acc_row(i) = e_acc_row(i) + RKbmbh(k)*rhs_row(i)   
+
+           e_acc_roY(i) = e_acc_roY(i) + RKbmbh(k)*rhs_roY(i)   
 
            e_acc_xx(i) = e_acc_xx(i) + RKbmbh(k)*rhs_xx(i)
            e_acc_xy(i) = e_acc_xy(i) + RKbmbh(k)*rhs_xy(i)
@@ -368,7 +384,7 @@ contains
      !! Build the right hand sides
      call calc_all_rhs    
           
-     enrm_ro=zero;enrm_rou=zero;enrm_rov=zero;enrm_row=zero
+     enrm_ro=zero;enrm_rou=zero;enrm_rov=zero;enrm_row=zero;enrm_roY=zero
      enrm_xx=zero;enrm_xy=zero;enrm_yy=zero;enrm_xz=zero;enrm_yz=zero;enrm_zz=zero
 !     !$omp parallel do reduction(max:enrm_ro,enrm_rou,enrm_rov,enrm_row,enrm_xx,enrm_xy,enrm_yy &
 !     !$omp ,enrm_xz,enrm_yz,enrm_zz,fr)
@@ -379,6 +395,9 @@ contains
         rou(i) = rou_reg1(i) + RKb(iRKstep)*rhs_rou(i)
         rov(i) = rov_reg1(i) + RKb(iRKstep)*rhs_rov(i)
         row(i) = row_reg1(i) + RKb(iRKstep)*rhs_row(i)           
+        
+        roY(i) = roY_reg1(i) + RKb(iRKstep)*rhs_roY(i)    
+        
 #ifndef di              
         psixx(i) = xx_reg1(i) + RKb(4)*rhs_xx(i)        
         psixy(i) = xy_reg1(i) + RKb(4)*rhs_xy(i)
@@ -399,7 +418,9 @@ contains
         e_acc_ro(i) = e_acc_ro(i) + RKbmbh(iRKstep)*rhs_ro(i)       
         e_acc_rou(i) = e_acc_rou(i) + RKbmbh(iRKstep)*rhs_rou(i)
         e_acc_rov(i) = e_acc_rov(i) + RKbmbh(iRKstep)*rhs_rov(i) 
-        e_acc_row(i) = e_acc_row(i) + RKbmbh(iRKstep)*rhs_row(i)   
+        e_acc_row(i) = e_acc_row(i) + RKbmbh(iRKstep)*rhs_row(i)
+        
+        e_acc_roY(i) = e_acc_roY(i) + RKbmbh(iRKstep)*rhs_roY(i)              
 
         e_acc_xx(i) = e_acc_xx(i) + RKbmbh(iRKstep)*rhs_xx(i)
         e_acc_xy(i) = e_acc_xy(i) + RKbmbh(iRKstep)*rhs_xy(i)
@@ -418,6 +439,7 @@ contains
            e_acc_rou(i) = e_acc_rou(i)*outflow_error_scaling
            e_acc_rov(i) = e_acc_rov(i)*outflow_error_scaling
            e_acc_row(i) = e_acc_row(i)*outflow_error_scaling
+           e_acc_roY(i) = e_acc_roY(i)*outflow_error_scaling           
            e_acc_xx(i) = e_acc_xx(i)*outflow_error_scaling   
            e_acc_xy(i) = e_acc_xy(i)*outflow_error_scaling   
            e_acc_yy(i) = e_acc_yy(i)*outflow_error_scaling 
@@ -432,6 +454,7 @@ contains
         enrm_rou = max(enrm_rou,abs(e_acc_rou(i))*erou_norm)
         enrm_rov = max(enrm_rov,abs(e_acc_rov(i))*erou_norm)
         enrm_row = max(enrm_row,abs(e_acc_row(i))*erou_norm)
+        enrm_roY = max(enrm_roY,abs(e_acc_roY(i))*ero_norm)        
         enrm_xx = max(enrm_xx,abs(e_acc_xx(i))*exx_norm)
         enrm_xy = max(enrm_xy,abs(e_acc_xy(i))*exx_norm)
         enrm_yy = max(enrm_yy,abs(e_acc_yy(i))*exx_norm)  
@@ -455,15 +478,16 @@ contains
         !! the least-stable nodes whilst debugging)
         alpha_out(i) = max(abs(e_acc_ro(i))*ero_norm,max(abs(e_acc_rou(i))*erou_norm, &
                        max(abs(e_acc_rov(i))*erou_norm,max(abs(e_acc_xx(i))*exx_norm,max(&
-                       abs(e_acc_xy(i))*exx_norm,abs(e_acc_yy(i))*exx_norm)))))
+                       abs(e_acc_xy(i))*exx_norm,max(abs(e_acc_yy(i))*exx_norm,&
+                       abs(e_acc_roy(i))*ero_norm,ero_norm))))))
 
      end do
 !     !$omp end parallel do  
 
      !! Deallocation
-     deallocate(rou_reg1,rov_reg1,row_reg1,ro_reg1)
-     deallocate(rhs_rou,rhs_rov,rhs_row,rhs_ro) 
-     deallocate(e_acc_ro,e_acc_rou,e_acc_rov,e_acc_row)
+     deallocate(rou_reg1,rov_reg1,row_reg1,ro_reg1,roY_reg1)
+     deallocate(rhs_rou,rhs_rov,rhs_row,rhs_ro,rhs_roY) 
+     deallocate(e_acc_ro,e_acc_rou,e_acc_rov,e_acc_row,e_acc_roY)
      deallocate(xx_reg1,xy_reg1,yy_reg1)
      deallocate(rhs_xx,rhs_xy,rhs_yy)
      deallocate(xz_reg1,yz_reg1,zz_reg1)
@@ -482,7 +506,8 @@ contains
                 max(enrm_rou, &
                 max(enrm_rov, &
                 max(enrm_row, &
-                doublesmall)))))
+                max(enrm_roY, &
+                doublesmall))))))
                                                            
      !! Apply BCs and update halos
      if(nb.ne.0) call apply_time_dependent_bounds     

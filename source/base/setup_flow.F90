@@ -39,6 +39,9 @@ contains
      allocate(psixz(np),psiyz(np),psizz(np))
      allocate(cxz(np),cyz(np),czz(np))
 
+     !! Mass fractions
+     allocate(roY(np))
+
      !! Secondary properties
      allocate(p(np));p=zero
      allocate(u(np),v(np),w(np));u=zero;v=zero;w=zero
@@ -194,14 +197,18 @@ contains
         v(i) = sin(two*pi*x)*cos(two*pi*y)!*cos(z)    !!c c
         w(i) = zero!u(i);u(i)=zero
                                  
+        !! Initial mass fraction
+        if(y.le.zero)then
+           roY(i) = one                                 
+        else
+           roY(i) = zero
+        endif
+                                 
         !! No initial flow
         u(i) = zero;v(i)=zero;w(i)=zero        
-
-!        u(i) = one;v(i)=zero;w(i)=zero        
         
 !        u(i) = four*(quarter-y*y)
-!        ro(i) = rho_char;p(i) = ro(i)*csq        
-        
+!        ro(i) = rho_char;p(i) = ro(i)*csq              
 !        tmp = -(1.00d0/4.0d0)*(cos(two*two*pi*x)+cos(two*two*pi*y))!*(two+cos(two*z))       
 
         ro(i) = rho_char! + tmp*Ma*Ma      
@@ -225,8 +232,8 @@ contains
         !! Kolmogorov IC for Miguel paper (with perturbation)
 !        u(i) = cos(y) - 0.25d-10*(-sin(x/four)*sin(y/four) + two*cos(three*x/four)*sin(y/two))
 !        v(i) = zero + 0.25d-10*(cos(x/four)*cos(y/four) - three*cos(three*x/four)*sin(y/two))        
-!        cxx(i) = one + (Wi*Wi/(one + Mdiff*Wi))*(one-cos(two*y)/(one+four*Mdiff*Wi))
-!        cxy(i) = -Wi*sin(y)/(one+Mdiff*Wi)
+!        cxx(i) = one + (Wi*Wi/(one + kappa*Wi))*(one-cos(two*y)/(one+four*kappa*Wi))
+!        cxy(i) = -Wi*sin(y)/(one+kappa*Wi)
 !        cyy(i) = one    
 
         !! Initial conditions for other Newtonian Kolmogorov flow
@@ -510,13 +517,16 @@ contains
      !! Load the initial conditions
      do i=1,npfb
 #ifdef dim3
-        read(14,*) tmpro,u(i),v(i),w(i),tmp,tmp,tmp,cxx(i),cxy(i),cyy(i),cxz(i),cyz(i),czz(i)
+        read(14,*) tmpro,u(i),v(i),w(i),tmp,tmp,tmp,cxx(i),cxy(i),cyy(i),cxz(i),cyz(i),czz(i),roY(i)
 #else
-        read(14,*) tmpro,u(i),v(i),tmp,tmp,tmp,cxx(i),cxy(i),cyy(i),czz(i)
+        read(14,*) tmpro,u(i),v(i),tmp,tmp,tmp,cxx(i),cxy(i),cyy(i),czz(i),roY(i)
         cxz(i)=zero;cyz(i)=zero
 #endif    
         !! Add rho_char back on    
         ro(i) = tmpro + rho_char
+        
+        !! Convert Y to roY
+        roY(i) = ro(i)*roY(i)
  
         !! Add the pressure gradient back in if required
 #ifdef pgrad

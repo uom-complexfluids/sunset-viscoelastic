@@ -1,5 +1,5 @@
 #if (chl || newt)
-!#ifndef fenep
+#ifdef feneppppppppppp
 module rhs
   !! ----------------------------------------------------------------------------------------------
   !! SUNSET CODE: Scalable Unstructured Node-SET code for DNS.
@@ -34,15 +34,14 @@ module rhs
   real(rkind),dimension(:,:),allocatable :: gradro,gradp  !! Velocity gradients defined in common, as used elsewhere too
   real(rkind),dimension(:),allocatable :: lapu,lapv,lapw,fenepf
   real(rkind),dimension(:,:),allocatable :: gradpsixx,gradpsixy,gradpsiyy
-  real(rkind),dimension(:,:),allocatable :: gradpsixz,gradpsiyz,gradpsizz
+  real(rkind),dimension(:,:),allocatable :: gradpsixz,gradpsiyz,gradpsizz,gradfenepf
   
   real(rkind) :: dundn,dutdn,dutdt,dpdn
   real(rkind) :: xn,yn,un,ut
   
   !! Characteristic boundary condition formulation
   real(rkind),dimension(:,:),allocatable :: L  !! The "L" in NSCBC formulation    
-
- 
+  
 
 contains
 !! ------------------------------------------------------------------------------------------------
@@ -53,7 +52,7 @@ contains
      !! gradients, and then calls property-specific RHS routines
           
      !! Some initial allocation of space for boundaries
-     if(nb.ne.0) allocate(L(nb,6)) 
+     if(nb.ne.0) allocate(L(nb,5)) 
 
      !! Initialise right hand sides to zero
      rhs_ro=zero;rhs_rou=zero;rhs_rov=zero;rhs_row=zero
@@ -70,7 +69,6 @@ contains
      call calc_gradient(w,gradw)
 #endif    
   
-     segment_tstart = omp_get_wtime()     
      
      !! Evaluate the pressure.
      !$omp parallel do
@@ -86,9 +84,6 @@ contains
      end do
      !$omp end parallel do     
 
-     !! Profiling
-     segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart  
 
      !! Call individual routines to build the RHSs
      !! N.B. second derivatives and derivatives of secondary variables are calculated within
@@ -99,8 +94,6 @@ contains
      !! Only call conformation RHS if non-Newtonian
      call calc_rhs_cholesky
 #endif
-     call calc_rhs_roY
-
  
      !! Evaluate RHS for boundaries
      if(nb.ne.0) then 
@@ -118,7 +111,7 @@ contains
      deallocate(gradpsixx,gradpsixy,gradpsiyy)  
      deallocate(gradpsixz,gradpsiyz,gradpsizz)
 #ifdef fenep
-     deallocate(fenepf)
+     deallocate(fenepf,gradfenepf)
 #endif  
 #endif
   
@@ -130,8 +123,6 @@ contains
      integer(ikind) :: i,j
      real(rkind),dimension(ithree) :: tmp_vec
      real(rkind) :: tmp_scal,divvel_local
-     
-     segment_tstart=omp_get_wtime()
      
      !! Build RHS for internal nodes
      !$omp parallel do private(i,tmp_vec,tmp_scal,divvel_local)
@@ -169,10 +160,6 @@ contains
         end do
         !$omp end parallel do 
      end if       
-
-     !! Profiling
-     segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart  
 
      return
   end subroutine calc_rhs_ro 
@@ -217,15 +204,15 @@ contains
      gradpsixz=zero;gradpsiyz=zero
 #endif     
 #ifdef fenep
-     !! Calculate the FENE-P non-linearity function
-     allocate(fenepf(np));
+     !! Calculate the FENE-P non-linearity function (and its derivative)
+     allocate(fenepf(np),gradfenepf(npfb,ithree));
      do i=1,np
         fenepf(i) = (fenep_l2-three)/(fenep_l2-(cxx(i)+cyy(i)+czz(i)))
      end do
+     call calc_gradient(fenepf,gradfenepf)     
 #endif
 #endif
 
-     segment_tstart=omp_get_wtime()
         
         
      !! Store coefficients for RHS
@@ -253,8 +240,6 @@ contains
         
 #ifndef newt
         !! Calculate gradc from gradpsi
-        !! NOTE, if FENE-P, psi holds the cholesky decomposition of f(tr(c))*c, and so
-        !! the div.c we calculate here is actually div.tau. For sPTT, div.c=div.tau.
         gradcxx(1) = two*exp(two*psixx(i))*gradpsixx(i,1)
         gradcxy(1) = exp(psixx(i))*gradpsixy(i,1) + psixy(i)*exp(psixx(i))*gradpsixx(i,1)
         gradcxy(2) = exp(psixx(i))*gradpsixy(i,2) + psixy(i)*exp(psixx(i))*gradpsixx(i,2)   
@@ -272,9 +257,15 @@ contains
         gradcxz = zero;gradcyz=zero;gradczz=zero
 #endif     
         !! add polymeric term
-        f_visc_u = f_visc_u + coef_polymeric*(gradcxx(1) + gradcxy(2) + gradcxz(3))
-        f_visc_v = f_visc_v + coef_polymeric*(gradcxy(1) + gradcyy(2) + gradcyz(3))
-        f_visc_w = f_visc_w + coef_polymeric*(gradcxz(1) + gradcyz(2) + gradczz(3))
+        f_visc_u = f_visc_u + coef_polymeric*(gradcxx(1) + cxx(i)*gradfenepf(i,1) &
+                                             +gradcxy(2) + cxy(i)*gradfenepf(i,2) &
+                                             +gradcxz(3) + cxz(i)*gradfenepf(i,3))
+        f_visc_v = f_visc_v + coef_polymeric*(gradcxy(1) + cxy(i)*gradfenepf(i,1) & 
+                                             +gradcyy(2) + cyy(i)*gradfenepf(i,2) &
+                                             +gradcyz(3) + cyz(i)*gradfenepf(i,3))
+        f_visc_w = f_visc_w + coef_polymeric*(gradcxz(1) + cxz(i)*gradfenepf(i,1) & 
+                                             +gradcyz(2) + cyz(i)*gradfenepf(i,2) &
+                                             +gradczz(3) + czz(i)*gradfenepf(i,3))
 
 #endif
 
@@ -289,11 +280,11 @@ contains
  
         !! Uncomment for some Kolmogorov forcing. The hard-coded numbers are n and n**2.       
 #ifdef frcng
-!        body_force_u = body_force_u + (16.0d0*visc_total/rho_char)*cos(4.0d0*rp(i,2)) !! 16,4
-!        body_force_v = body_force_v + (16.0d0*visc_total/rho_char)*cos(4.0d0*rp(i,1)) !! 16,4 
+        body_force_u = body_force_u + (64.0d3*visc_total/rho_char)*cos(8.0d0*rp(i,2)) !! 16,4
+        body_force_v = body_force_v + (64.0d3*visc_total/rho_char)*cos(8.0d0*rp(i,1)) !! 16,4 
 !        body_force_u = body_force_u + u(i)*(half/meanKE - one)/(1000.0d0*dt)
 !        body_force_v = body_force_v + v(i)*(half/meanKE - one)/(1000.0d0*dt)
-        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+kappa*beta*Wi)/(one+kappa*Wi)  !! Miguel's forcing     
+!        body_force_u = body_force_u + (one/Re)*cos(rp(i,2))*(one+kappa*beta*Wi)/(one+kappa*Wi)  !! Miguel's forcing     
 #endif
                                                 
         !! RHS 
@@ -362,9 +353,7 @@ contains
               f_visc_w = coef_solvent*lapw(i)
               
 #ifndef newt              
-              !! Calculate gradc from gradpsi
-              !! NOTE, if FENE-P, psi holds the cholesky decomposition of f(tr(c))*c, and so
-              !! the div.c we calculate here is actually div.tau. For sPTT, div.c=div.tau.              
+              !! Calculate gradc from gradpsi                         
               gradcxx(1) = two*exp(two*psixx(i))*gradpsixx(i,1)
               gradcxy(1) = exp(psixx(i))*gradpsixy(i,1) + psixy(i)*exp(psixx(i))*gradpsixx(i,1)
               gradcxy(2) = exp(psixx(i))*gradpsixy(i,2) + psixy(i)*exp(psixx(i))*gradpsixx(i,2)   
@@ -382,9 +371,15 @@ contains
               gradcxz = zero;gradcyz=zero;gradczz=zero
 #endif    
               !! add polymeric term
-              f_visc_u = f_visc_u + coef_polymeric*(gradcxx(1) + gradcxy(2) + gradcxz(3))
-              f_visc_v = f_visc_v + coef_polymeric*(gradcxy(1) + gradcyy(2) + gradcyz(3))
-              f_visc_w = f_visc_w + coef_polymeric*(gradcxz(1) + gradcyz(2) + gradczz(3))
+              f_visc_u = f_visc_u + coef_polymeric*(gradcxx(1) + cxx(i)*gradfenepf(i,1) &
+                                                   +gradcxy(2) + cxy(i)*gradfenepf(i,2) &
+                                                   +gradcxz(3) + cxz(i)*gradfenepf(i,3))
+              f_visc_v = f_visc_v + coef_polymeric*(gradcxy(1) + cxy(i)*gradfenepf(i,1) & 
+                                                   +gradcyy(2) + cyy(i)*gradfenepf(i,2) &
+                                                   +gradcyz(3) + cyz(i)*gradfenepf(i,3))
+              f_visc_w = f_visc_w + coef_polymeric*(gradcxz(1) + cxz(i)*gradfenepf(i,1) & 
+                                                   +gradcyz(2) + cyz(i)*gradfenepf(i,2) &
+                                                   +gradczz(3) + czz(i)*gradfenepf(i,3))              
 #endif            
             
               !! Body force
@@ -408,9 +403,6 @@ contains
      !! Deallocate any stores no longer required
      deallocate(lapu,lapv,lapw)
 
-     !! Profiling
-     segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart  
 
      return
   end subroutine calc_rhs_rovel
@@ -442,7 +434,6 @@ contains
 #endif        
      endif
       
-     segment_tstart=omp_get_wtime()
               
      !! Build RHS for internal nodes
 !     !$omp parallel do private(i,tmp_vec,adxx,adxy,adyy,ucxx,ucxy,ucyy, &
@@ -503,49 +494,15 @@ contains
         
 
         !! Source terms
-#ifdef fenep
-        !! Modified formulation for FENE-P, because we're evolving Cholesky components of J=fr*c
-        fr = fenepf(i)
-        srctmp = two*gradu_local(1)*cxx(i) + two*gradu_local(2)*cxy(i) &
-               + two*gradv_local(1)*cxy(i) + two*gradv_local(2)*cyy(i) &
+        fr = -fenepf(i)
+        sxx = (one/lambda)*(fr*cxx(i)-one) + kappa*lapcxx(i)      
+        sxy = (one/lambda)*(fr*cxy(i)) + kappa*lapcxy(i)    
+        syy = (one/lambda)*(fr*cyy(i)-one) + kappa*lapcyy(i)   
+        szz = (one/lambda)*(fr*czz(i)-one) + kappa*lapczz(i)
 #ifdef dim3
-               + two*gradu_local(3)*cxz(i) + two*gradv_local(3)*cyz(i) &
-               + two*gradw_local(1)*cxz(i) + two*gradw_local(2)*cyz(i) + two*gradw_local(3)*czz(i) &
-#endif
-               - (fr*cxx(i)+fr*cyy(i)+fr*czz(i)-three)/lambda &
-               + kappa*(lapcxx(i)+lapcyy(i)+lapczz(i))
-               
-        sxx = -(fr/lambda)*(fr*cxx(i)-one) + kappa*fr*lapcxx(i) + fr*cxx(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))       
-        sxy = -(fr/lambda)*(fr*cxy(i)) + kappa*fr*lapcxy(i)     + fr*cxy(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))  
-        syy = -(fr/lambda)*(fr*cyy(i)-one) + kappa*fr*lapcyy(i) + fr*cyy(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))    
-        szz = -(fr/lambda)*(fr*czz(i)-one) + kappa*fr*lapczz(i) + fr*czz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))
-#ifdef dim3
-        sxz = -(fr/lambda)*(fr*cxz(i)) + kappa*fr*lapcxz(i) + fr*cxz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))
-        syz = -(fr/lambda)*(fr*cyz(i)) + kappa*fr*lapcyz(i) + fr*cyz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))        
-#endif        
-
-#else        
-        !! Basic formulation for sPTT
-        fr = -(one - epsPTT*three + epsPTT*(cxx(i)+cyy(i)+czz(i)))/lambda !! scalar function
-        sxx = fr*(cxx(i) - one) + kappa*lapcxx(i)
-        sxy = fr*cxy(i) + kappa*lapcxy(i)         
-        syy = fr*(cyy(i) - one) + kappa*lapcyy(i) 
-        
-        !! Giesekus
-#ifdef gsks        
-        sxx = sxx - giesekus_a*((cxx(i)-one)**two + cxy(i)**two)/Wi
-        sxy = sxy - giesekus_a*(cxy(i)*(cxx(i)+cyy(i)-two))/Wi
-        syy = syy - giesekus_a*(cxy(i)**two + (cyy(i)-one)**two)/Wi
-#endif        
-        
-                 
-#ifdef dim3
-        sxz = fr*cxz(i) + kappa*lapcxz(i)
-        syz = fr*cyz(i) + kappa*lapcyz(i)
-        szz = fr*(czz(i) - one) + kappa*lapczz(i)
-#endif          
-#endif        
-            
+        sxz = (one/lambda)*(fr*cxz(i)) + kappa*lapcxz(i) 
+        syz = (one/lambda)*(fr*cyz(i)) + kappa*lapcyz(i)      
+#endif                        
         
         !! Cholesky source terms
         csxx = half*sxx/lxx/lxx
@@ -564,15 +521,11 @@ contains
         rhs_xx(i) = -adxx + ucxx + csxx
         rhs_xy(i) = -adxy + ucxy + csxy
         rhs_yy(i) = -adyy + ucyy + csyy
-#ifdef fenep
         rhs_zz(i) = -adzz + uczz + cszz        
-#endif        
 #ifdef dim3
         rhs_xz(i) = -adxz + ucxz + csxz
         rhs_yz(i) = -adyz + ucyz + csyz
-#ifndef fenep
-        rhs_zz(i) = -adzz + uczz + cszz
-#endif        
+      
 #endif        
         
      end do
@@ -674,46 +627,16 @@ contains
 
 
 
-#ifdef fenep
-           !! Modified formulation, because we're evolving Cholesky components of J=fr*c
-           fr = fenepf(i)
-           srctmp = two*gradu_local(1)*cxx(i) + two*gradu_local(2)*cxy(i) &
-                  + two*gradv_local(1)*cxy(i) + two*gradv_local(2)*cyy(i) &
+           fr = -fenepf(i)              
+           sxx = (one/lambda)*(fr*cxx(i)-one) + kappa*lapcxx(i)
+           sxy = (one/lambda)*(fr*cxy(i)) + kappa*lapcxy(i)    
+           syy = (one/lambda)*(fr*cyy(i)-one) + kappa*lapcyy(i)    
+           szz = (one/lambda)*(fr*czz(i)-one) + kappa*lapczz(i)
 #ifdef dim3
-                  + two*gradu_local(3)*cxz(i) + two*gradv_local(3)*cyz(i) &
-                  + two*gradw_local(1)*cxz(i) + two*gradw_local(2)*cyz(i) + two*gradw_local(3)*czz(i) &
-#endif
-                  - (fr*cxx(i)+fr*cyy(i)+fr*czz(i)-three)/lambda &
-                  + kappa*(lapcxx(i)+lapcyy(i)+lapczz(i))
-               
-           sxx = -(fr/lambda)*(fr*cxx(i)-one) + kappa*fr*lapcxx(i) + fr*cxx(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))       
-           sxy = -(fr/lambda)*(fr*cxy(i)) + kappa*fr*lapcxy(i)     + fr*cxy(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))  
-           syy = -(fr/lambda)*(fr*cyy(i)-one) + kappa*fr*lapcyy(i) + fr*cyy(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))    
-           szz = -(fr/lambda)*(fr*czz(i)-one) + kappa*fr*lapczz(i) + fr*czz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))
-#ifdef dim3
-           sxz = -(fr/lambda)*(fr*cxz(i)) + kappa*fr*lapcxz(i) + fr*cxz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))
-           syz = -(fr/lambda)*(fr*cyz(i)) + kappa*fr*lapcyz(i) + fr*cyz(i)*srctmp/(fenep_l2-cxx(i)-cyy(i)-czz(i))        
+           sxz = (one/lambda)*(fr*cxz(i)) + kappa*lapcxz(i) 
+           syz = (one/lambda)*(fr*cyz(i)) + kappa*lapcyz(i)       
 #endif  
-#else
-           !! Unmodified sPTT form
-           fr = -(one - epsPTT*three + epsPTT*(cxx(i)+cyy(i)+czz(i)))/lambda !! scalar function
-           sxx = fr*(cxx(i) - one) + kappa*lapcxx(i) 
-           sxy = fr*cxy(i) + kappa*lapcxy(i)         
-           syy = fr*(cyy(i) - one) + kappa*lapcyy(i)      
-
-           !! Giesekus
-#ifdef gsks           
-           sxx = sxx - giesekus_a*((cxx(i)-one)**two + cxy(i)**two)/Wi
-           sxy = sxy - giesekus_a*(cxy(i)*(cxx(i)+cyy(i)-two))/Wi
-           syy = syy - giesekus_a*(cxy(i)**two + (cyy(i)-one)**two)/Wi
-#endif           
-           
-#ifdef dim3
-           sxz = fr*cxz(i) + kappa*lapcxz(i)
-           syz = fr*cyz(i) + kappa*lapcyz(i)
-           szz = fr*(czz(i) - one) + kappa*lapczz(i)
-#endif          
-#endif        
+     
          
         
            !! Cholesky source terms
@@ -747,120 +670,9 @@ contains
         end do
 !        !$omp end parallel do     
      end if
-     
-     !! Profiling
-     segment_tend = omp_get_wtime()
-     segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart  
-     
 
      return
   end subroutine calc_rhs_cholesky 
-!! ------------------------------------------------------------------------------------------------  
-  subroutine calc_rhs_roY
-     !! Construct the RHS for mass fraction
-     !! N.B. the variables roVY and divroVY, and their sums, hold *minus* roVY and minus divroVY
-     real(rkind),dimension(:),allocatable :: lapYspec,Y_thisspec
-     real(rkind),dimension(:,:),allocatable :: gradYspec
-     integer(ikind) :: i,j
-     real(rkind),dimension(ithree) :: body_force
-     real(rkind) :: tmp_scal,divroVY,tmpro
-     real(rkind) :: q00,q01,q02,q03,q04
-
-     !! Allocate space for gradients and stores
-     allocate(Y_thisspec(np));Y_thisspec = zero
-     allocate(gradYspec(npfb,ithree));gradYspec=zero
-     allocate(lapYspec(npfb));lapYspec=zero
-    
-     !! Store Y=roY/ro for the species (N.B. this loop is over ALL nodes)
-     do i=1,np
-        Y_thisspec(i) = roY(i)/ro(i)
-     end do    
-           
-     !! Calculate gradient and Laplacian for Yspec for this species     
-     call calc_gradient(Y_thisspec,gradYspec)
-     call calc_laplacian_transverse_only_on_bound(Y_thisspec,lapYspec)
-      
-        !$omp parallel do private(i,tmp_scal,divroVY,tmpro)
-        do j=1,npfb-nb
-           i=internal_list(j)
-           tmpro = one/ro(i) !! tmpro contains 1/ro
-
-           !! Convective term: ro*u.gradY + Y(div.(ro*u))        
-           tmp_scal = ro(i)*(u(i)*gradYspec(i,1) + &
-                             v(i)*gradYspec(i,2) + &
-                             w(i)*gradYspec(i,3) ) - Y_thisspec(i)*rhs_ro(i)             
-         
-           !! Molecular diffusion term
-           divroVY = Mdiff*(ro(i)*lapYspec(i) + dot_product(gradYspec(i,:),gradro(i,:)))
-                                                     
-           !! Add convective and diffusive terms to the RHS
-           rhs_roY(i) = -tmp_scal + divroVY 
-        end do
-        !$omp end parallel do
-
-        !! Make L5+ispec and boundary RHS
-        if(nb.ne.0)then
-   
-           !$omp parallel do private(i,xn,yn,un,ut,dutdt,divroVY,tmpro,tmp_scal,q00,q01,q02,q03,q04)
-           do j=1,nb
-              i=boundary_list(j)
-              tmpro = one/ro(i)  !! tmpro contains 1/ro
-              
-              !! Convective term: ro*u.gradY + Y(div.(ro*u)) with zero boundary normal term
-              tmp_scal = ro(i)*(zero*gradYspec(i,1) + &
-                                v(i)*gradYspec(i,2) + &
-                                w(i)*gradYspec(i,3) ) - Y_thisspec(i)*rhs_ro(i)
-                                                               
-              !! NOTE: In all boundary cases we start by constructing only transverse parts of divroVY
-              
-              !! Molecular diffusion term
-              divroVY = Mdiff*(ro(i)*lapYspec(i) + dot_product(gradYspec(i,2:3),gradro(i,2:3)))
-              !! Up to this point, divroVY only contains transverse terms
-                   
-              !! zero normal components of flux if required
-              if(node_type(i).eq.0) then  !! Wall, add modified normal flux derivative to enforce roVY.n=0
-
-                 q00 = Y_thisspec(i)
-                 q01 = Y_thisspec(i+1)
-                 q02 = Y_thisspec(i+2)
-                 q03 = Y_thisspec(i+3)
-                 q04 = Y_thisspec(i+4)
-                 
-                 divroVY = divroVY + Mdiff*ro(i)* &
-                                   (-170.0d0*q00 + 216.0d0*q01 - 54.0d0*q02 + 8.0d0*q03)/ &
-                                   (36.0d0*s(i)*s(i)*L_char*L_char)
-                                                                        
-              
-              else if(node_type(i).eq.1.or.node_type(i).eq.2) then !! Inflow or outflow
-              !! DEBUG: how do we add in the mixture averaged parts??!?!
-                 if(znf_mdiff(j)) then
-                 else      
-                    !! Add d(roVY.n)/dn term
-!                    divroVY = divroVY + (-25.0d0*roVY(i,1)+48.0d0*roVY(i+1,1)-36.0d0*roVY(i+2,1) &
-!                                         +16.0d0*roVY(i+3,1)-three*roVY(i+4,1))/(12.0d0*s(i)*L_char) !&
-!!                                      !+ roVY(i,1)/boundary radius of curvature...
-                 end if
-              end if
-                                                      
-                 
-              !! Construct RHS (transverse convective and diffusive) (v(i)=w(i)=zero if WALL)
-              rhs_roY(i) = -tmp_scal + divroVY
-
-              !! Build the characteristic
-              L(j,6) = u(i)*gradYspec(i,1)    !! (u(i)=zero if WALL)                         
-              
-           end do
-           !$omp end parallel do 
-                       
-        end if                         
-
-        
-     !! Deallocate any stores no longer required    
-     deallocate(lapYspec,Y_thisspec)
-   
-          
-     return
-  end subroutine calc_rhs_roY      
 !! ------------------------------------------------------------------------------------------------
   subroutine calc_rhs_nscbc
     !! This routine asks boundaries module to prescribe L as required, then builds the final 
@@ -925,7 +737,7 @@ contains
     
     !! Profiling
     segment_tend = omp_get_wtime()
-    segment_time_local(6) = segment_time_local(6) + segment_tend - segment_tstart    
+    segment_time_local(2) = segment_time_local(2) + segment_tend - segment_tstart    
 
     return  
   end subroutine calc_rhs_nscbc
@@ -953,68 +765,17 @@ contains
 
 #ifndef newt
 
-if(.false.)then
-#ifdef fenep
-     !! For Cholesky & FENE-P, we evolve Cholesky components if fr*c, but we should convert to the 
-     !! Cholesky-components of c to filter (unsure why, but it works better).
-     do i=1,np
-#ifdef dim3     
-        fr = exp(two*psixx(i)) + psixy(i)**two + exp(two*psiyy(i)) &
-           + psixz(i)**two + psiyz(i)**two + exp(two*psizz(i)) !<- trace of J
-#else
-        fr = (exp(two*psixx(i)) + psixy(i)**two + exp(two*psiyy(i))+exp(two*psizz(i))) !<- trace of J
-#endif        
-        fr = fenep_l2*fr/(fenep_l2-three+fr) !<- trace of c
-        fr = (fenep_l2-three)/(fenep_l2-fr)  !<- fr
-        psixx(i) = psixx(i) - log(sqrt(fr))
-        psixy(i) = psixy(i)/sqrt(fr)
-        psiyy(i) = psiyy(i) - log(sqrt(fr))       
-        psizz(i) = psizz(i) - log(sqrt(fr))
-#ifdef dim3        
-        psixz(i) = psixz(i)/sqrt(fr)
-        psiyz(i) = psiyz(i)/sqrt(fr)
-#endif
-     end do
-#endif
-endif
 
-     !! Filter log-conformation or cholesky components
+     !! Filter cholesky components
      call calc_filtered_var(psixx)
      call calc_filtered_var(psixy)
      call calc_filtered_var(psiyy)     
-#ifdef fenep
      call calc_filtered_var(psizz)                                          
-#endif     
 #ifdef dim3          
      call calc_filtered_var(psixz)
-     call calc_filtered_var(psiyz)                
-#ifndef fenep     
-     call calc_filtered_var(psizz)                                          
+     call calc_filtered_var(psiyz)                  
 #endif     
-#endif     
-
-if(.false.)then
-#ifdef fenep
-     !! Convert back to Cholesky components of fr*c 
-     do i=1,npfb
-#ifdef dim3
-        fr = (fenep_l2-three)/(fenep_l2 - (exp(two*psixx(i)) + psixy(i)**two + exp(two*psiyy(i)) &
-                                           + psixz(i)**two + psiyz(i)**two + exp(two*psizz(i))))
-#else     
-        fr = (fenep_l2-three)/(fenep_l2 - (exp(two*psixx(i)) + psixy(i)**two + exp(two*psiyy(i))+exp(two*psizz(i))))
-#endif        
-        psixx(i) = psixx(i) + log(sqrt(fr))
-        psixy(i) = psixy(i)*sqrt(fr)
-        psiyy(i) = psiyy(i) + log(sqrt(fr))
-        psizz(i) = psizz(i) + log(sqrt(fr))
-#ifdef dim3
-        psixz(i) = psixz(i)*sqrt(fr)
-        psiyz(i) = psiyz(i)*sqrt(fr)
-#endif        
-        
-     end do
-#endif
-endif  
+  
      !! End of ifndef newt
 #endif     
 
@@ -1037,13 +798,6 @@ endif
      !! Adjust density uniformly
      do i=1,npfb
         ro(i) = ro(i) - dro
-        !! Adjust momentum - rou = rou(old)*ro(new)/ro(old)
-        rou(i) = ro(i)*rou(i)/(ro(i)+dro)
-        rov(i) = ro(i)*rov(i)/(ro(i)+dro)
-        row(i) = ro(i)*row(i)/(ro(i)+dro)     
-        
-        !! Adjust mass fraction
-        roY(i) = ro(i)*roY(i)/(ro(i)+dro)           
      end do
 #endif
      
@@ -1051,5 +805,5 @@ endif
   end subroutine filter_variables  
 !! ------------------------------------------------------------------------------------------------    
 end module rhs
-!#endif
+#endif
 #endif

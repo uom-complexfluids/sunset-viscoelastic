@@ -84,7 +84,7 @@ contains
 #endif
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(10) = segment_time_local(10) + segment_tend - segment_tstart
+     segment_time_local(8) = segment_time_local(8) + segment_tend - segment_tstart
      segment_tstart = omp_get_wtime()
 
 #ifdef mp 
@@ -104,6 +104,9 @@ contains
      !! density
      call halo_exchange(ro)
      
+     !! Mass fraction
+     call halo_exchange(roY)
+     
 #ifdef pgrad
      !! Adjust density for imposed pressure gradient
      do i=npfb,np
@@ -112,13 +115,15 @@ contains
            ro(i) = roi0 + Ma*Ma*(grav(1)+driving_force(1))*L_domain_x           
            rou(i) = rou(i)*(ro(i)/roi0) 
            rov(i) = rov(i)*(ro(i)/roi0)
-           row(i) = row(i)*(ro(i)/roi0)            
+           row(i) = row(i)*(ro(i)/roi0)     
+           roY(i) = roY(i)*(ro(i)/roi0)            
         else if(halo_periodic(i).eq.-1) then
            roi0 = ro(i)
            ro(i) = roi0 - Ma*Ma*(grav(1)+driving_force(1))*L_domain_x        
            rou(i) = rou(i)*(ro(i)/roi0) 
            rov(i) = rov(i)*(ro(i)/roi0)
-           row(i) = row(i)*(ro(i)/roi0)            
+           row(i) = row(i)*(ro(i)/roi0)     
+           roY(i) = roY(i)*(ro(i)/roi0)            
         end if
      end do
 #endif     
@@ -151,7 +156,7 @@ contains
 
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(1) = segment_time_local(1) + segment_tend - segment_tstart
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart
      return
   end subroutine halo_exchanges_all
 #ifdef mp  
@@ -1249,7 +1254,7 @@ contains
      
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(1) = segment_time_local(1) + segment_tend - segment_tstart    
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
      return
   end subroutine global_reduce_sum
 !! ------------------------------------------------------------------------------------------------
@@ -1267,7 +1272,7 @@ contains
      
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(1) = segment_time_local(1) + segment_tend - segment_tstart    
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
 
      return
   end subroutine global_reduce_min
@@ -1287,7 +1292,7 @@ contains
     
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(1) = segment_time_local(1) + segment_tend - segment_tstart    
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
      return
   end subroutine global_reduce_max
 !! ------------------------------------------------------------------------------------------------  
@@ -1305,7 +1310,7 @@ contains
      
      !! Profiling
      segment_tend = omp_get_wtime()
-     segment_time_local(1) = segment_time_local(1) + segment_tend - segment_tstart    
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
      return
   end subroutine global_reduce_maxint
 #endif

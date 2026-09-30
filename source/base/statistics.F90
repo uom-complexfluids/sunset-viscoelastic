@@ -69,6 +69,7 @@ contains
   end subroutine open_stats_files
 !! ------------------------------------------------------------------------------------------------
   subroutine statistics_control(m_out_stats)
+     use interpolation  
      !! This routine controls the statistics calculation and output routines.
      integer(ikind),intent(inout) :: m_out_stats
      integer(ikind) :: i
@@ -89,6 +90,9 @@ contains
         !! Velocity control
         call velocity_control     
 #endif
+
+        !! Calculate values of some property interpolated onto a line (of points)
+!        call line_interpolate
 
         !! Check conservation of mass and energy
         call mass_and_energy_check

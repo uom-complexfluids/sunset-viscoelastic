@@ -99,19 +99,16 @@ contains
            write(6,*) "run-time/itime:",t_per_dt,"Moving avg:",t_last_X/dble(scr_freq)
 
            !! Profiling
-           store1 = stg(11) - sum(stg(1:10))
+           store1 = stg(1) - sum(stg(2:11))
            write(6,*) "----------------------Profiling----------------------"
-           write(6,291) "MPI transfers    :",100.0d0*stg(1)/stg(11),'%,',stg(1)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "BCs              :",100.0d0*stg(2)/stg(11),'%,',stg(2)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "Filtering        :",100.0d0*stg(7)/stg(11),'%,',stg(3)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "1st Derivatives  :",100.0d0*stg(5)/stg(11),'%,',stg(4)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "2nd Derivatives  :",100.0d0*stg(6)/stg(11),'%,',stg(5)/dble(scr_freq*nprocs),"seconds/step"
-!           write(6,291) "Empty            :",100.0d0*stg(3)/stg(11),'%,',stg(6)/dble(scr_freq*nprocs),"seconds/step"
-!           write(6,291) "Empty            :",100.0d0*stg(4)/stg(11),'%,',stg(7)/dble(scr_freq*nprocs),"seconds/step"
-!           write(6,291) "Empty            :",100.0d0*stg(8)/stg(11),'%,',stg(8)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "Empty            :",100.0d0*stg(9)/stg(11),'%,',stg(9)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "Waiting          :",100.0d0*stg(10)/stg(11),'%,',stg(10)/dble(scr_freq*nprocs),"seconds/step"
-           write(6,291) "Other            :",100.0d0*store1/stg(11),'%,',store1/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "MPI transfers    :",100.0d0*stg(7)/stg(1),'%,',stg(7)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "BCs              :",100.0d0*stg(6)/stg(1),'%,',stg(6)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "Filtering        :",100.0d0*stg(5)/stg(1),'%,',stg(5)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "1st Derivatives  :",100.0d0*stg(3)/stg(1),'%,',stg(3)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "2nd Derivatives  :",100.0d0*stg(4)/stg(1),'%,',stg(4)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "RHS building     :",100.0d0*stg(2)/stg(1),'%,',stg(2)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "MPI wait         :",100.0d0*stg(8)/stg(1),'%,',stg(8)/dble(scr_freq*nprocs),"seconds/step"
+           write(6,291) "Other            :",100.0d0*store1/stg(1),'%,',store1/dble(scr_freq*nprocs),"seconds/step"
 #ifndef dim3
            write(6,'(/,/,A)') "  "                             
 #endif
@@ -152,17 +149,14 @@ contains
         stg = segment_time_local
         store1 = stg(11) - sum(stg(1:10))        
         write(6,*) "----------------------Profiling----------------------"
-        write(6,291) "MPI transfers    :",100.0d0*stg(1)/stg(11),'%,',stg(1)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "BCs              :",100.0d0*stg(2)/stg(11),'%,',stg(2)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "Filtering        :",100.0d0*stg(7)/stg(11),'%,',stg(3)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "1st Derivatives  :",100.0d0*stg(5)/stg(11),'%,',stg(4)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "2nd Derivatives  :",100.0d0*stg(6)/stg(11),'%,',stg(5)/dble(scr_freq*nprocs),"seconds/step"
-!        write(6,291) "Empty            :",100.0d0*stg(3)/stg(11),'%,',stg(6)/dble(scr_freq*nprocs),"seconds/step"
-!        write(6,291) "Empty            :",100.0d0*stg(4)/stg(11),'%,',stg(7)/dble(scr_freq*nprocs),"seconds/step"
-!        write(6,291) "Empty            :",100.0d0*stg(8)/stg(11),'%,',stg(8)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "Empty            :",100.0d0*stg(9)/stg(11),'%,',stg(9)/dble(scr_freq*nprocs),"seconds/step"
-        write(6,291) "Waiting          :",100.0d0*stg(10)/stg(11),'%,',stg(10)/dble(scr_freq*nprocs),"seconds/step"        
-        write(6,291) "Other            :",100.0d0*store1/stg(11),'%,',store1/dble(scr_freq*nprocs),"seconds/step"     
+        write(6,291) "MPI transfers    :",100.0d0*stg(7)/stg(1),'%,',stg(7)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "BCs              :",100.0d0*stg(6)/stg(1),'%,',stg(6)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "Filtering        :",100.0d0*stg(5)/stg(1),'%,',stg(5)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "1st Derivatives  :",100.0d0*stg(3)/stg(1),'%,',stg(3)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "2nd Derivatives  :",100.0d0*stg(4)/stg(1),'%,',stg(4)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "RHS building     :",100.0d0*stg(2)/stg(1),'%,',stg(2)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "MPI wait         :",100.0d0*stg(8)/stg(1),'%,',stg(8)/dble(scr_freq*nprocs),"seconds/step"
+        write(6,291) "Other            :",100.0d0*store1/stg(1),'%,',store1/dble(scr_freq*nprocs),"seconds/step"    
         write(6,'(A)') "  "                  
 #ifndef dim3
         write(6,'(/,/,A)') "  "                             
@@ -301,10 +295,10 @@ contains
 
 #ifdef dim3
            write(20,*) tmpro,u(i),v(i),w(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i), &
-                       cxz(i),cyz(i),czz(i)      
+                       cxz(i),cyz(i),czz(i),roY(i)/ro(i)      
     
 #else
-           write(20,*) tmpro,u(i),v(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i)
+           write(20,*) tmpro,u(i),v(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),roY(i)/ro(i)
 !          write(20,*) tmpro,u(i),v(i),tmpVort,tmpro,alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i)
 #endif
         end do

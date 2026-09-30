@@ -128,10 +128,17 @@ contains
      read(12,*) giesekus_a
      read(12,*) 
      
+     !! Polymeric diffusivity
+     read(12,*)
+     read(12,*) kappa
+     read(12,*)
+     
      !! Schmidt number
      read(12,*)
-     read(12,*) Mdiff
-     read(12,*)
+     read(12,*) Sc
+     read(12,*) 
+     
+     Mdiff = one/(Re*Sc)
 
      !! Store total, solvent and polymeric viscosities
      rho_char = one
