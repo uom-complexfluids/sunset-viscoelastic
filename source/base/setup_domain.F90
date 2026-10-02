@@ -332,7 +332,7 @@ contains
         do j=1,nb
            i=boundary_list(j)
            if(node_type(i).eq.0) then !! Walls
-              znf_mdiff(j) = .false.
+              znf_mdiff(j) = .true.
               znf_vdiff(j) = .false.
               znf_vtdiff(j) = .false.              
            else if(node_type(i).eq.1) then !! Inflow
@@ -340,7 +340,7 @@ contains
               znf_vdiff(j) = .true.     !! No normal viscous diffusion through inflows                
               znf_vtdiff(j) = .false.              
            else if(node_type(i).eq.2) then !! Outflow
-              znf_mdiff(j) = .true.
+              znf_mdiff(j) = .false.
               znf_vdiff(j) = .false.      
               znf_vtdiff(j) = .true.      !! No tangential viscous diffusion through outflow                            
 

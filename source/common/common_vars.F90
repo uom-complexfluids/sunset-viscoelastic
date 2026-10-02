@@ -111,7 +111,7 @@ module common_vars
   !! Characteristic BC bits
   integer(ikind) :: inflow_type,wall_type,inflow_velocity_control
   real(rkind) :: p_outflow,p_inflow   !! Desired pressure on outflow boundary (and inflow if required...)
-  real(rkind),dimension(:),allocatable :: u_inflow_local
+  real(rkind),dimension(:),allocatable :: u_inflow_local,Y_inflow_local
   
   !! Flags for flux-zero-ing on boundaries
   logical,dimension(:),allocatable :: znf_vdiff,znf_vtdiff,znf_mdiff  

@@ -818,7 +818,7 @@ contains
               !! Up to this point, divroVY only contains transverse terms
                    
               !! zero normal components of flux if required
-              if(node_type(i).eq.0) then  !! Wall, add modified normal flux derivative to enforce roVY.n=0
+              if(znf_mdiff(j)) then  !! Wall, add modified normal flux derivative to enforce roVY.n=0
 
                  q00 = Y_thisspec(i)
                  q01 = Y_thisspec(i+1)
@@ -831,15 +831,18 @@ contains
                                    (36.0d0*s(i)*s(i)*L_char*L_char)
                                                                         
               
-              else if(node_type(i).eq.1.or.node_type(i).eq.2) then !! Inflow or outflow
-              !! DEBUG: how do we add in the mixture averaged parts??!?!
-                 if(znf_mdiff(j)) then
-                 else      
-                    !! Add d(roVY.n)/dn term
-!                    divroVY = divroVY + (-25.0d0*roVY(i,1)+48.0d0*roVY(i+1,1)-36.0d0*roVY(i+2,1) &
-!                                         +16.0d0*roVY(i+3,1)-three*roVY(i+4,1))/(12.0d0*s(i)*L_char) !&
-!!                                      !+ roVY(i,1)/boundary radius of curvature...
-                 end if
+              else 
+
+                 q00 = Y_thisspec(i)*ro(i)*u(i)
+                 q01 = Y_thisspec(i+1)*ro(i+1)*u(i+1)
+                 q02 = Y_thisspec(i+2)*ro(i+2)*u(i+2)
+                 q03 = Y_thisspec(i+3)*ro(i+3)*u(i+3)
+                 q04 = Y_thisspec(i+4)*ro(i+4)*u(i+4)
+              
+                 !! Add d(roVY.n)/dn term
+                 divroVY = divroVY + (-25.0d0*q00+48.0d0*q01-36.0d0*q02 &
+                                      +16.0d0*q03-three*q04)/(12.0d0*s(i)*L_char) !&
+                                      !+ roVY(i,1)/boundary radius of curvature...
               end if
                                                       
                  
@@ -917,6 +920,8 @@ contains
        rhs_rou(i) = rhs_rou(i) - u(i)*tmp_scal - (L(j,5)-L(j,1))/c
        rhs_rov(i) = rhs_rov(i) - v(i)*tmp_scal - ro(i)*L(j,3)
        rhs_row(i) = rhs_row(i) - w(i)*tmp_scal - ro(i)*L(j,4)
+       
+       rhs_roY(i) = rhs_roY(i) - (roY(i)/tmpro)*tmp_scal - ro(i)*L(j,6)        
          
     end do
     !$omp end parallel do
@@ -941,7 +946,6 @@ contains
      real(rkind),dimension(:),allocatable :: hypterm_xx,hypterm_xy,hypterm_yy,hypterm_xz,hypterm_yz,hypterm_zz
      real(rkind) :: lxx,lxy,lyy,lzz,lxz,lyz,csxz,csyz
             
-     !! Filter density
      call calc_filtered_var(ro)
           
      !! Filter velocity components
@@ -950,6 +954,9 @@ contains
 #ifdef dim3
      call calc_filtered_var(row)
 #endif     
+
+     !! Filter mass fraction
+     call calc_filtered_var(roY)
 
 #ifndef newt
 
@@ -1020,6 +1027,7 @@ endif
 
      !! Correct mass conservation if required
 #ifdef mcorr
+     if(xbcond_L.ne.0.and.xbcond_U.ne.0) then !! Only if not in/out
      !! Calculate average density deviation (from rho_char)
      tm = zero;tv = zero
      !$omp parallel do reduction(+:tm,tv)
@@ -1045,6 +1053,7 @@ endif
         !! Adjust mass fraction
         roY(i) = ro(i)*roY(i)/(ro(i)+dro)           
      end do
+     endif
 #endif
      
      return

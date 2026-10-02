@@ -50,7 +50,8 @@ contains
      
      !! Allocate the boundary temperatures
      if(nb.ne.0) then
-        allocate(u_inflow_local(nb));u_inflow_local = u_char               
+        allocate(u_inflow_local(nb));u_inflow_local = u_char  
+        allocate(Y_inflow_local(nb));Y_inflow_local = zero             
      end if
      
      !! =======================================================================
@@ -136,6 +137,7 @@ contains
            i=boundary_list(j)
            if(node_type(i).eq.1) then !! Inflow node
               u_inflow_local(j) = u(i)
+              Y_inflow_local(j) = roY(i)/ro(i)
            endif
         end do
         !$omp end parallel do        
@@ -197,15 +199,9 @@ contains
         v(i) = sin(two*pi*x)*cos(two*pi*y)!*cos(z)    !!c c
         w(i) = zero!u(i);u(i)=zero
                                  
-        !! Initial mass fraction
-        if(y.le.zero)then
-           roY(i) = one                                 
-        else
-           roY(i) = zero
-        endif
                                  
         !! No initial flow
-        u(i) = zero;v(i)=zero;w(i)=zero        
+        u(i) = one;v(i)=zero;w(i)=zero        
         
 !        u(i) = four*(quarter-y*y)
 !        ro(i) = rho_char;p(i) = ro(i)*csq              
@@ -220,6 +216,13 @@ contains
 #endif                                  
            
         p(i) = ro(i)*csq
+        
+        !! Initial mass fraction
+        if(y.le.zero)then
+           roY(i) = one*ro(i)                                 
+        else
+           roY(i) = zero*ro(i)
+        endif        
         
         !! Initial conformation tensor
         cxx(i) = one !+ 128.0d0*Wi*Wi*y*y

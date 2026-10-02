@@ -479,7 +479,7 @@ contains
         alpha_out(i) = max(abs(e_acc_ro(i))*ero_norm,max(abs(e_acc_rou(i))*erou_norm, &
                        max(abs(e_acc_rov(i))*erou_norm,max(abs(e_acc_xx(i))*exx_norm,max(&
                        abs(e_acc_xy(i))*exx_norm,max(abs(e_acc_yy(i))*exx_norm,&
-                       abs(e_acc_roy(i))*ero_norm,ero_norm))))))
+                       abs(e_acc_roy(i))*ero_norm))))))
 
      end do
 !     !$omp end parallel do  

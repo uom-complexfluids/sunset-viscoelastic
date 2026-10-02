@@ -228,7 +228,9 @@ contains
                      
            endif
            
-           !! Don't need to do anything for soft inflow or inout
+           !! Don't need to do anything for soft inflow or inout except mass fraction
+           
+           roY(i) = Y_inflow_local(j)*ro(i)        
         
         !! Outflow boundaries
         else if(node_type(i).eq.2) then
