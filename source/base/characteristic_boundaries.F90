@@ -251,7 +251,7 @@ contains
                  znf_vdiff(j) = .true.     !! No normal viscous diffusion through inflows                
                  znf_vtdiff(j) = .false.                           
               else                      !! Outgoing flow, set diffusive flux flags for outflow
-                 znf_mdiff(j) = .true.
+                 znf_mdiff(j) = .false.
                  znf_vdiff(j) = .false.      
                  znf_vtdiff(j) = .true.      !! No tangential viscous diffusion through outflow       
               end if

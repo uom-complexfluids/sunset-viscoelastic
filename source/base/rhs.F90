@@ -425,7 +425,7 @@ contains
      real(rkind) :: sxx,sxy,syy,srctmp,szz,sxz,syz
      real(rkind) :: csxx,csxy,csyy,cszz,csxz,csyz
      real(rkind),dimension(3) :: gradu_local,gradv_local,gradw_local
-     real(rkind) :: xn,yn,fR,wss,cl11,cl12,cl22 
+     real(rkind) :: xn,yn,fR,cl11,cl12,cl22 
      real(rkind),dimension(:),allocatable :: lapCxx,lapCxy,lapCyy,lapCzz,lapCxz,lapCyz
          
      !! Laplacian for conformation tensor components
@@ -587,7 +587,7 @@ contains
            xn = rnorm(i,1);yn=rnorm(i,2)
    
            tmp_vec(1) = u(i);tmp_vec(2) = v(i);tmp_vec(3) = w(i) !! tmp_vec holds (u,v,w) for node i
-           if(node_type(i).eq.1) then !! Inflows, set u*dpsi/dx = 0
+           if(node_type(i).eq.1) then !! Inflows, set u*dpsi/dx = 0 via modification of tmp_vec(1)
               tmp_vec(1) = zero
            end if           
 

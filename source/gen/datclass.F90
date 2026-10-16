@@ -138,10 +138,10 @@ program datgen
 !! ------------------------------------------------------------------------------------------------
   case(3) !! Kolmogorov flow (currently set for Miguel's work)
 
-     yl=2.0d0*2.0d0*pi*1.0d0
+     yl=1.0d0*2.0d0*pi*2.0d0
      xl=yl/1.0d0
      h0 = xl/12.0d0
-     dx0=yl/(150.0d0)
+     dx0=yl/(100.0d0)
      xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
      
      nb_patches = 4
@@ -152,10 +152,10 @@ program datgen
      b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
      b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
      b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
-     nb_blobs = 1;n_blob_coefs=6
+     nb_blobs = 0;n_blob_coefs=6
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-     blob_centre(1,:)=(/1000.0d0*xl/8.0d0,0.0d0*yl/8.0d0/); !! Central
+!     blob_centre(1,:)=(/1000.0d0*xl/8.0d0,0.0d0*yl/8.0d0/); !! Central
 !     blob_centre(1,:)=(/-3.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
 !     blob_centre(2,:)=(/-1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
 !     blob_centre(3,:)=(/ 1.0d0*xl/8.0d0,3.0d0*yl/8.0d0/); !! Central
@@ -243,7 +243,7 @@ case(6) !! 2 cylinders, in-out
      h0=D_cyl/2.0d0      !cylinder radius
      yl=2.0d0*D_cyl ! box height
      xl=5.0d0*S_cyl !sqrt(3.0d0)*S_cyl ! channel length
-     dx0=D_cyl/50.0d0       !75
+     dx0=D_cyl/100.0d0       !75
      xbcond_L=0;xbcond_U=0;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
@@ -265,7 +265,7 @@ case(6) !! 2 cylinders, in-out
         blob_coeffs(i,:)=h0*(/1.0d0,0.0d0,0.0d0,0.0d0,0.0d0,0.0d0/);blob_rotation(i)=-pi/9.0d0
      end do
 
-     dxmin = dx0/1.5d0
+     dxmin = dx0/2.0d0
      dx_wall=dxmin;dx_in=3.0d0*dx0;dx_out=1.33*dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin              
             

@@ -107,10 +107,10 @@ contains
 !        call check_load_balance
 
         !! Evaluate L2 error norms for Poiseuille flow
-        call poiseuille_l2norm
+!        call poiseuille_l2norm
         
         !! Evaluate L2 error norms for Kolmogorov flow
-!        call kolmogorov_l2norm
+        call kolmogorov_l2norm
 
         !! Evaluate mean/RMS conformation tensor components
         call conf_check
@@ -566,10 +566,10 @@ contains
      do i=1,npfb
         y = rp(i,2)
 
-        u_exact = cos(2.0d0*y)
-        cxxe = one + two*lambda*lambda*4.0d0*sin(2.0d0*y)**two
-        cxye = -lambda*2.0d0*sin(2.0d0*y)
-        cyye = one
+        u_exact = cos(y)
+        cxxe = one + (Wi*Wi/(one + kappa*Wi))*(one-cos(two*y)/(one+four*kappa*Wi))
+        cxye = -Wi*sin(y)/(one+kappa*Wi)
+        cyye = one            
   
         dVi = vol(i)
         tot_vol = tot_vol + dVi
