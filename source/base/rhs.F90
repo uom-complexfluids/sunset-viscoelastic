@@ -832,13 +832,13 @@ contains
                                                                         
               
               else 
-
-                 q00 = Y_thisspec(i)*ro(i)*u(i)
-                 q01 = Y_thisspec(i+1)*ro(i+1)*u(i+1)
-                 q02 = Y_thisspec(i+2)*ro(i+2)*u(i+2)
-                 q03 = Y_thisspec(i+3)*ro(i+3)*u(i+3)
-                 q04 = Y_thisspec(i+4)*ro(i+4)*u(i+4)
-              
+                 !! roVY.n
+                 q00 = ro(i)*Mdiff*gradYspec(i,1)
+                 q01 = ro(i+1)*Mdiff*gradYspec(i+1,1)
+                 q02 = ro(i+2)*Mdiff*gradYspec(i+2,1)
+                 q03 = ro(i+3)*Mdiff*gradYspec(i+3,1)
+                 q04 = ro(i+4)*Mdiff*gradYspec(i+4,1)
+                              
                  !! Add d(roVY.n)/dn term
                  divroVY = divroVY + (-25.0d0*q00+48.0d0*q01-36.0d0*q02 &
                                       +16.0d0*q03-three*q04)/(12.0d0*s(i)*L_char) !&

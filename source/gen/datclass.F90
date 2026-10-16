@@ -243,7 +243,7 @@ case(6) !! 2 cylinders, in-out
      h0=D_cyl/2.0d0      !cylinder radius
      yl=2.0d0*D_cyl ! box height
      xl=5.0d0*S_cyl !sqrt(3.0d0)*S_cyl ! channel length
-     dx0=D_cyl/100.0d0       !75
+     dx0=D_cyl/50.0d0       !75
      xbcond_L=0;xbcond_U=0;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
@@ -266,7 +266,7 @@ case(6) !! 2 cylinders, in-out
      end do
 
      dxmin = dx0/2.0d0
-     dx_wall=dxmin;dx_in=3.0d0*dx0;dx_out=1.33*dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     dx_wall=dxmin;dx_in=4.0d0*dx0;dx_out=1.33*dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin              
             
 !! ------------------------------------------------------------------------------------------------
