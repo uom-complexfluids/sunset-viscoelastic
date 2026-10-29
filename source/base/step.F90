@@ -516,7 +516,7 @@ contains
 
 !! Historically we called get_c_from_psi here, but I think this is a mistake.
          
-     !! Filter the solution 
+     !! Filter the solution     
      call filter_variables
 
      !! Apply BCs and update halos
@@ -690,6 +690,7 @@ contains
      !! Impose upper limit based on CFL-type constraints
      dt_max = min(dt_cfl,dt_parabolic)
      if(dt.gt.dt_max) dt = dt_max
+
 
 #ifdef lc
 !     dt = dt_max

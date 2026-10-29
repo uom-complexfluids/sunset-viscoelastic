@@ -1007,10 +1007,11 @@ contains
      do jj=1,nb  
         i=boundary_list(jj)
         if(node_type(i).eq.0)then
-           do k=1,ij_count(i)  !! Will result in Laplacian being correct... (but d2/dn2 incorrect)
+           do k=1,ij_count(i)  !! Will result in Laplacian being correct... 
               ij_wb_grad2(1,k,jj) = ij_wb_grad2(1,k,jj) + ij_w_grad(1,k,i)*ooRcurve(jj) !!..but d2/dn1 incorrect
-!              ij_wb_grad2(2,k,jj) = ij_wb_grad2(2,k,jj) + ij_w_grad(1,k,i)*ooRcurve(jj)!!..but d2/dn2 incorrect
-              ij_w_lap(k,i) = ij_wb_grad2(1,k,jj) + ij_wb_grad2(2,k,jj)              
+!!              ij_wb_grad2(2,k,jj) = ij_wb_grad2(2,k,jj) + ij_w_grad(1,k,i)*ooRcurve(jj)!!..but d2/dn2 incorrect
+              ij_w_lap(k,i) = ij_wb_grad2(1,k,jj) + ij_wb_grad2(2,k,jj)
+                                         
            end do                 
         end if                      
      end do

@@ -107,10 +107,10 @@ contains
 !        call check_load_balance
 
         !! Evaluate L2 error norms for Poiseuille flow
-!        call poiseuille_l2norm
+        call poiseuille_l2norm
         
         !! Evaluate L2 error norms for Kolmogorov flow
-        call kolmogorov_l2norm
+!        call kolmogorov_l2norm
 
         !! Evaluate mean/RMS conformation tensor components
         call conf_check

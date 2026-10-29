@@ -97,6 +97,8 @@ program datgen
         blob_coeffs(i,:) = 0.0d0
         blob_coeffs(i,1) = h0;blob_rotation(i) = 0.0d0
      end do
+     
+
 
      !! dx0/2.0d0, 1.5d0*dx0
      dxmin = dx0/3.0d0 !!2.0d0
@@ -108,9 +110,9 @@ program datgen
      SovD = 2.0d0!sqrt(pi/2.0d0)
      D_cyl = 1.0d0
      h0=D_cyl/2.0d0      !cylinder radius
-     yl=SovD*D_cyl ! box height
+     yl=2.0d0*SovD*D_cyl ! box height
      xl=SovD*D_cyl ! channel length
-     dx0=D_cyl/60.0       !75
+     dx0=D_cyl/100.0       !75
      xbcond_L=1;xbcond_U=1;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
@@ -124,12 +126,15 @@ program datgen
      nb_blobs = 1;n_blob_coefs=3
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-     blob_centre(1,:) = (/0.0d0,0.0d0/)  
-
+     blob_centre(1,:) = (/0.0d0,20.0d0/)  
      do i=1,nb_blobs
         blob_coeffs(i,:) = 0.0d0
         blob_coeffs(i,1) = h0;blob_rotation(i) = 0.0d0
      end do
+     nww=2
+     allocate(wavy_phase(nww),wavy_k(nww),wavy_y0(nww),wavy_sign(nww),wavy_amp(nww))
+     wavy_phase(1)=0.0d0;wavy_k(1) = 2.0d0*pi;wavy_y0(1)=-0.5d0;wavy_sign(1)=1;wavy_amp(1)=0.1d0
+     wavy_phase(2)=0.0d0;wavy_k(2) = 2.0d0*pi;wavy_y0(2)=0.5d0;wavy_sign(2)=-1;wavy_amp(2)=0.1d0     
 
      !! dx0/2.0d0, 1.5d0*dx0
      dxmin = dx0/1.0d0 !!2.0d0
@@ -188,8 +193,8 @@ program datgen
 case(4) !! Poiseuille flow
 
      yl=1.0d0
-     xl=yl/1.0d0
-     dx0=yl/50.0d0
+     xl=yl/4.0d0
+     dx0=yl/100.0d0
      xbcond_L=1;xbcond_U=1;ybcond_L=0;ybcond_U=0
      
      nb_patches = 4
@@ -200,7 +205,7 @@ case(4) !! Poiseuille flow
      b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
      b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
      b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
-     nb_blobs = 0;n_blob_coefs=0
+     nb_blobs = 0     
 
      dxmin = dx0/1.0d0
      dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
@@ -243,7 +248,7 @@ case(6) !! 2 cylinders, in-out
      h0=D_cyl/2.0d0      !cylinder radius
      yl=2.0d0*D_cyl ! box height
      xl=5.0d0*S_cyl !sqrt(3.0d0)*S_cyl ! channel length
-     dx0=D_cyl/50.0d0       !75
+     dx0=D_cyl/100.0d0       !75
      xbcond_L=0;xbcond_U=0;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
@@ -266,40 +271,45 @@ case(6) !! 2 cylinders, in-out
      end do
 
      dxmin = dx0/2.0d0
-     dx_wall=dxmin;dx_in=4.0d0*dx0;dx_out=1.33*dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     dx_wall=dxmin;dx_in=3.0d0*dx0;dx_out=1.333*dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin              
             
 !! ------------------------------------------------------------------------------------------------
 case(7) !! Grilli cylinders
 
-     D_cyl = 1.0d0
+     D_cyl = 0.5d0
      S_cyl = D_cyl*3.33d0
-     h0=D_cyl/2.0d0      !cylinder radius
-     yl=3.0d0*D_cyl ! box height
-     xl=2.0d0*S_cyl !sqrt(3.0d0)*S_cyl ! channel length
-     dx0=D_cyl/125.0d0       !75
-     xbcond_L=1;xbcond_U=1;ybcond_L=2;ybcond_U=2
+     h0=0.3d0      !cylinder radius
+     yl=1.0d0 ! box height
+     xl=1.0d0 !sqrt(3.0d0)*S_cyl ! channel length
+     dx0=1.0d0/30.0d0       !75
+     xbcond_L=1;xbcond_U=1;ybcond_L=0;ybcond_U=0
      
      nb_patches = 4
      allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
      allocate(b_type(nb_patches))
-     b_type(:) = (/ 3, 3, 3, 3/)  
+     b_type(:) = (/ 3, 3, 0, 3/)  
      b_node(1,:) = (/-0.5d0*xl, -0.5d0*yl /)
      b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
      b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
      b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
-     nb_blobs = 2;n_blob_coefs=6
+     nb_blobs = 1;n_blob_coefs=12
+     open(unit=191,file="blob_fcoefs.in")
+     read(191,*) n_blob_coefs
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-     blob_centre(1,:) = (/-0.5d0*S_cyl, 0.0d0/)   !! Row 0
-     blob_centre(2,:) = (/0.5d0*S_cyl, 0.0d0/)   !! Row 0
-     
-     do i=1,nb_blobs
-        blob_coeffs(i,:)=h0*(/1.0d0,0.0d0,0.0d0,0.0d0,0.0d0,0.0d0/);blob_rotation(i)=-pi/9.0d0
-     end do
+     blob_centre(1,:) = (/0.0d0,0.0d0/)  
 
-     dxmin = dx0/4.0d0
-     dx_wall=dxmin;dx_in=4.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     !! Coefficients (if we want (e.g.) hexagonal obstacles). Load into blob 1, then copy to other blobs
+     do i=1,n_blob_coefs
+        read(191,*) blob_coeffs(1,i)
+        blob_coeffs(1,i) = blob_coeffs(1,i)*h0!*1.1083
+     end do
+     blob_rotation(1) = 0.0d0
+     close(191)              
+
+     dxmin = dx0/1.0d0
+     dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin                 
 !! ------------------------------------------------------------------------------------------------
 case(8) !! Minimal unit cell of isometric cylinder array
@@ -316,7 +326,7 @@ case(8) !! Minimal unit cell of isometric cylinder array
      h0=D_cyl/2.0d0      !cylinder radius
      yl=sqrt(3.0d0)*S_cyl ! box height
      xl=S_cyl ! channel length
-     dx0=D_cyl/28.8d0!499.50       !250
+     dx0=D_cyl/60.0d0!499.50       !250
      xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
      
      nb_patches = 4
@@ -354,7 +364,7 @@ case(8) !! Minimal unit cell of isometric cylinder array
 !     blob_coeffs(4,:) = blob_coeffs(3,:);blob_rotation(4) = blob_rotation(3)
 
 
-     dxmin = dx0/2.0d0  !! 2.0d0, 1.5d0
+     dxmin = dx0/1.0d0  !! 2.0d0, 1.5d0
      dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin                
 !! ------------------------------------------------------------------------------------------------
@@ -563,7 +573,8 @@ end select
 
      !! Create the boundary nodes
      call make_boundary_particles
-     call make_boundary_blobs               
+     call make_boundary_blobs    
+     call make_wavy_walls           
      ipart = nb   
 
 if(itest.ne.0) then              
@@ -648,6 +659,20 @@ if(itest.ne.0) then
                  end if
               endif              
            end do
+           
+           !! Are we the wrong side of the line
+           do i=1,nww
+              temp = wavy_y0(i) + wavy_amp(i)*sin(wavy_k(i)*x + wavy_phase(i))
+              if(wavy_sign(i).eq.1) then !! Omit particles below line
+                 if(y.le.temp) then
+                    keepgoing = .false.
+                 end if
+              else   !! Omit particles above the line
+                 if(y.ge.temp) then
+                    keepgoing = .false.
+                 end if
+              end if         
+           end do           
            
            !! Are we too close to a boundary?
            if(x-0.5d0*dx.le.xb_min.or.x+0.5d0*dx.ge.xb_max.or.y-0.5d0*dx.le.yb_min.or.y+0.5d0*dx.ge.yb_max)then
@@ -778,7 +803,7 @@ endif
   ! 
   
   !! Write to fort file for quick visualisation
-!  write(31,*) npfb
+!!  write(31,*) npfb
 !  do i=1,npfb
 !     write(31,*) xp(i),yp(i),dxp(i)
 !  end do
@@ -1163,3 +1188,90 @@ end subroutine quicksort
 
      return
    end subroutine evaluate_blob_perimeters  
+!! ------------------------------------------------------------------------------------------------
+   subroutine make_wavy_walls
+     use kind_parameters
+     use common_parameter
+     use global_variables 
+
+     implicit none
+     integer(ikind) :: ipart,iw,ibc
+     real(rkind) :: x,y,tmp2,delx,dely,dydx,dxlocal
+     real(rkind) :: Swall
+   
+     ipart=nb
+
+
+     if(nww.ne.0)then
+        do iw=1,nww
+                    
+              !! Numerical Estimate approx number of nodes along the wall (easier than doing elliptic integrals)
+              !! Location on left x-boundary
+              Swall = 0.0d0;x = xb_min;y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+              do while(x.le.xb_max)              
+                 dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+                 
+                 !! Move along curve a tiny bit - how far along x?
+                 delx = 0.001*dx_wall/sqrt(1.0d0 + dydx**2.0d0)
+                 
+                 !! New position
+                 x = x + delx;
+                 dely = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw)) - y
+                 y=y+dely
+                 
+                 !! Increment length
+                 Swall = Swall + sqrt(delx**2.0d0 + dely**2.0d0)      
+              end do                                           
+              
+              nb = floor(Swall/dx_wall)
+              !! Revise node spacing to get integer number round blob
+              dxlocal = Swall/dble(nb)                      
+
+              !! Location on left x-boundary
+              x = xb_min;y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+              dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+              
+              !! Location of first point: -0.5dx along curve
+              x = xb_min - 0.5d0*dxlocal/sqrt(1.0d0 + dydx**2.0d0)
+              y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+              
+              do while(x.le.xb_max)              
+                 
+                 !! Find gradient
+                 dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+                 
+                 !! Move along curve - how far along x?
+                 delx = dxlocal/sqrt(1.0d0 + dydx**2.0d0)
+                 
+                 !! New position
+                 x = x + delx;
+                 y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+
+                 !! If the position is within the domain, create a particle
+                 if(x.ge.xb_min.and.x.lt.xb_max.and.y.ge.yb_min.and.y.lt.yb_max)then              
+                    ipart = ipart + 1 
+                    xp(ipart)=x;yp(ipart)=y;dxp(ipart)=dx_wall
+                                
+                    dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))                                
+                    tmp2 = -atan(dydx)
+        
+                    xnorm(ipart) = sin(tmp2)
+                    ynorm(ipart) = cos(tmp2)
+                    if(wavy_sign(iw).eq.-1) then  !! Invert the normals if the blob is inverted
+                       xnorm(ipart) = -xnorm(ipart)
+                       ynorm(ipart) = -ynorm(ipart)
+                    endif
+                    node_type(ipart) = 0 !! Identify it as a wall                    
+                 end if                 
+      
+              end do   
+                                         
+                                                                                                       
+        end do              
+     end if
+
+     nb=ipart    
+!!
+     write(6,*) 'no. of solid boundary particles: ',nb
+     return
+   end subroutine make_wavy_walls    

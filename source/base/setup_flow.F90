@@ -201,7 +201,7 @@ contains
                                  
                                  
         !! No initial flow
-        u(i) = one;v(i)=zero;w(i)=zero        
+        u(i) = zero;v(i)=zero;w(i)=zero        
         
 !        u(i) = four*(quarter-y*y)
 !        ro(i) = rho_char;p(i) = ro(i)*csq              

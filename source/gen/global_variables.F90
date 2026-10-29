@@ -18,8 +18,12 @@
       integer(ikind) :: nb_blobs
       real(rkind),dimension(:),allocatable :: b_theta
       real(rkind),dimension(:,:),allocatable :: blob_centre,blob_coeffs
-      real(rkind),dimension(:),allocatable :: blob_rotation,blob_invert
+      real(rkind),dimension(:),allocatable :: blob_rotation
+      integer(ikind),dimension(:),allocatable :: blob_invert
       integer(ikind) :: n_blob_coefs
+      real(rkind),dimension(:),allocatable :: wavy_phase,wavy_k,wavy_y0,wavy_amp
+      integer(ikind),dimension(:),allocatable :: wavy_sign
+      integer(ikind) :: nww
       
       !! Blob-perimeter
       real(rkind),dimension(:),allocatable :: Sblob

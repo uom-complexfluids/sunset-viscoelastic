@@ -330,7 +330,7 @@ contains
               dutdn = -yn*gradu(i,1)+xn*gradv(i,1)
 
               L(j,1) = half*(un-c)*(dpdn - tmpro*c*dundn) !! L1 
-              L(j,2) = un*(gradro(i,1) - gradp(i,1)/c/c)
+              L(j,2) = un*(gradro(i,1) - dpdn/c/c)  !! L2 identically zero for barotropic EoS
               L(j,3) = un*dutdn !! L3 
               L(j,4) = un*(gradw(i,1)*xn + gradw(i,2)*yn) !! L4
               L(j,5) = half*(un+c)*(dpdn + tmpro*c*dundn) !! L5 
@@ -351,7 +351,7 @@ contains
 
 
               L(j,1) = half*(u(i)-c)*(dpdn - tmpro*c*gradu(i,1))
-              L(j,2) = u(i)*(gradro(i,1) - gradp(i,1)/c/c)
+              L(j,2) = u(i)*(gradro(i,1) - dpdn/c/c) !! L2 identically zero for barotropic EoS
               L(j,3) = u(i)*gradv(i,1)
               L(j,4) = u(i)*gradw(i,1)
               L(j,5) = half*(u(i)+c)*(dpdn + tmpro*c*gradu(i,1))
@@ -1055,6 +1055,7 @@ endif
      end do
      endif
 #endif
+
      
      return
   end subroutine filter_variables  

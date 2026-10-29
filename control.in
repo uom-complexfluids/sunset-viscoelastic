@@ -16,19 +16,19 @@
 1.0d0 1.0d-2 2.5d-3
 
 !! Gravity vector (grav)
-0.0d0 0.0d0 0.0d0
+8.0d0 0.0d0 0.0d0
 
 !! Reynolds number
-1.0d2
+1.0d0
 
 !! Weissenberg number
 1.0d0
 
 !! Viscosity ratio (beta)
-0.95d0
+0.2d0
 
 !! sPTT non-linearity (epsilon)
-1.0d-3
+1.0d-30
 
 !! FENE-P maximum extensibility (b, or L2)
 1.0d20
@@ -37,7 +37,7 @@
 1.0d-30
 
 !! Dimensionless polymeric diffusion coefficient (kappa)
-1.0d-5
+1.0d-4
 
 !! Schmidt number
 1.0d2
