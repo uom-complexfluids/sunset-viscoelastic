@@ -145,12 +145,14 @@ contains
   subroutine initialise_interp_line
      use rbfs
      use svdlib
-     !! Read in a file containing a set of points for an interpolation line.
+     !! Read in a file containing a set of points for an interpolation line. Construct weights for
+     !! that interpolation
      integer(ikind) :: i,j,ii,k,i1
      real(rkind),dimension(:),allocatable :: neighbour_dist_tmp
      real(rkind) :: dst_tmp,ff1,rad,x,y
-     real(rkind),dimension(10,10) :: amat
-     real(rkind),dimension(10) :: wvec,xvec,psivec
+     integer(ikind),parameter :: nmatsize = 21
+     real(rkind),dimension(nmatsize,nmatsize) :: amat
+     real(rkind),dimension(nmatsize) :: wvec,xvec,psivec
      
      open(unit=314,file="interp_points.in",status="old")
      
@@ -241,6 +243,18 @@ contains
           xvec(8) = (1.0/2.0)*x*x*y
           xvec(9) = (1.0/2.0)*x*y*y
           xvec(10)= (1.0/6.0)*y*y*y
+          xvec(11)= (1.0/24.0)*x*x*x*x
+          xvec(12)= (1.0/6.0)*x*x*x*y
+          xvec(13)= (1.0/4.0)*x*x*y*y
+          xvec(14)= (1.0/6.0)*x*y*y*y
+          xvec(15)= (1.0/24.0)*y*y*y*y          
+          xvec(16)= (1.0/120.0)*x*x*x*x*x           
+          xvec(17)= (1.0/24.0)*x*x*x*x*y           
+          xvec(18)= (1.0/12.0)*x*x*x*y*y           
+          xvec(19)= (1.0/12.0)*x*x*y*y*y           
+          xvec(20)= (1.0/24.0)*x*y*y*y*y           
+          xvec(21)= (1.0/120.0)*y*y*y*y*y                                                             
+          
                     
           !! Build vector of Basis functions
           wvec(1) = ff1*one
@@ -253,9 +267,21 @@ contains
           wvec(8) = ff1*Hermite2(x)*Hermite1(y)
           wvec(9) = ff1*Hermite2(y)*Hermite1(x)
           wvec(10)= ff1*Hermite3(y)
+          wvec(11)= ff1*Hermite4(x)
+          wvec(12)= ff1*Hermite3(x)*Hermite1(y)
+          wvec(13)= ff1*Hermite2(x)*Hermite2(y)
+          wvec(14)= ff1*Hermite1(x)*Hermite3(y)
+          wvec(15)= ff1*Hermite4(y) 
+          wvec(16)= ff1*Hermite5(x)
+          wvec(17)= ff1*Hermite4(x)*Hermite1(y)
+          wvec(18)= ff1*Hermite3(x)*Hermite2(y)
+          wvec(19)= ff1*Hermite2(x)*Hermite3(y)
+          wvec(20)= ff1*Hermite1(x)*Hermite4(y)
+          wvec(21)= ff1*Hermite5(y)
+                                        
           
           !! Build matrix
-          do i1=1,10
+          do i1=1,nmatsize
              amat(i1,:) = amat(i1,:) + xvec(i1)*wvec(:)   !! Contribution to LHS for this interaction
           end do   
                              
@@ -264,7 +290,7 @@ contains
        
        !! Solve linear system to get Psi
        psivec = zero;psivec(1) = one
-       call svd_solve(amat,10,psivec)       
+       call svd_solve(amat,nmatsize,psivec)       
        
        !! Second loop over neighbours
        do k=1,ij_count(ii)
@@ -289,7 +315,17 @@ contains
           wvec(7) = ff1*Hermite3(x)
           wvec(8) = ff1*Hermite2(x)*Hermite1(y)
           wvec(9) = ff1*Hermite2(y)*Hermite1(x)
-          wvec(10)= ff1*Hermite3(y)         
+          wvec(10)= ff1*Hermite3(y)  
+          wvec(11)= ff1*Hermite4(x)
+          wvec(12)= ff1*Hermite3(x)*Hermite1(y)
+          wvec(13)= ff1*Hermite2(x)*Hermite2(y)
+          wvec(14)= ff1*Hermite1(x)*Hermite3(y)
+          wvec(15)= ff1*Hermite4(y)  
+          wvec(17)= ff1*Hermite4(x)*Hermite1(y)
+          wvec(18)= ff1*Hermite3(x)*Hermite2(y)
+          wvec(19)= ff1*Hermite2(x)*Hermite3(y)
+          wvec(20)= ff1*Hermite1(x)*Hermite4(y)
+          wvec(21)= ff1*Hermite5(y)                                    
          
           !! Store wij_interp
           interp_w_ij(k,i) = dot_product(psivec,wvec)
@@ -386,5 +422,24 @@ contains
      real(rkind) :: Hres
      Hres = z*z*z - 3.0d0*z
   end function Hermite3
+  function Hermite4(z) result(Hres)
+     real(rkind),intent(in) :: z
+     real(rkind) :: Hres
+     Hres = z*z*z*z - 6.0d0*z*z + 3.0d0
+  end function Hermite4
+  function Hermite5(z) result(Hres)
+     real(rkind),intent(in) :: z
+     real(rkind) :: z2,z3
+     real(rkind) :: Hres
+     z2=z*z;z3=z*z2
+     Hres = z2*z3 - 10.0d0*z3 + 15.0*z
+  end function Hermite5
+  function Hermite6(z) result(Hres)
+     real(rkind),intent(in) :: z
+     real(rkind) :: z2,z3
+     real(rkind) :: Hres
+     z2=z*z;z3=z*z2
+     Hres = z3*z3 - 15.0d0*z2*z2 + 45.0d0*z2 - 15.0d0
+  end function Hermite6  
 !! ------------------------------------------------------------------------------------------------                
 end module interpolation

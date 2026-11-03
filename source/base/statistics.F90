@@ -101,7 +101,7 @@ contains
 !        call error_TG
 
         !! Calculate the lift and drag on all solid obstacles
-!        call liftdrag
+        call liftdrag
 
         !! Calculate how well balanced the MPI decomposition is
 !        call check_load_balance
@@ -186,10 +186,14 @@ contains
            gradv0(:) = matmul(Jinv,gradv(i,:))           
            
            !! Total stress on surface
-           sigma(1,1) = visc_solvent*(fourthirds*gradu0(1)-twothirds*gradv0(2)) - csq*(ro(i)-one)
-           sigma(1,2) = visc_solvent*(gradu0(2)+gradv0(1))
-           sigma(2,1) = visc_solvent*(gradu0(2)+gradv0(1))           
-           sigma(2,2) = visc_solvent*(fourthirds*gradv0(2)-twothirds*gradu0(1)) - csq*(ro(i)-one)
+           sigma(1,1) = visc_solvent*(fourthirds*gradu0(1)-twothirds*gradv0(2)) &
+                      + visc_polymeric*(cxx(i)-one)/lambda &
+                      - csq*(ro(i)-one)
+           sigma(1,2) = visc_solvent*(gradu0(2)+gradv0(1)) + visc_polymeric*cxy(i)/lambda
+           sigma(2,1) = visc_solvent*(gradu0(2)+gradv0(1)) + visc_polymeric*cxy(i)/lambda
+           sigma(2,2) = visc_solvent*(fourthirds*gradv0(2)-twothirds*gradu0(1)) &
+                      + visc_polymeric*(cyy(i)-one)/lambda &
+                      - csq*(ro(i)-one)
           
            Fn(:) = matmul(sigma,rnorm(i,:))   !! Force on surface (sigma.n)
                      
@@ -201,7 +205,9 @@ contains
 
 #ifdef mp
      force_tmp = force
-     call MPI_ALLREDUCE(force_tmp,force,ithree,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)     
+     call global_reduce_sum(force(1))
+     call global_reduce_sum(force(2))
+     call global_reduce_sum(force(3))          
      if(iproc.eq.0)then
         write(194,*) time/Time_char,force
         flush(194)
@@ -267,8 +273,8 @@ contains
 #ifdef vpid     
      !! New error     
      eflow_n = one - tot_vel!*1.1831 !! Targetting a volumetric flux of one
-     eflow_n = one - tot_u(1)*tot_vol/(L_domain_y*L_domain_x)!*1.1831 !! Targetting a volumetric flux of one     
-     eflow_n = one - vol_flux/flux_length
+!     eflow_n = one - tot_u(1)*tot_vol/(L_domain_y*L_domain_x)!*1.1831 !! Targetting a volumetric flux of one     
+!     eflow_n = one - vol_flux/flux_length
           
      !! Integral term
      sum_eflow = sum_eflow + eflow_n*dt

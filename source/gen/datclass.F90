@@ -110,10 +110,10 @@ program datgen
      SovD = 2.0d0!sqrt(pi/2.0d0)
      D_cyl = 1.0d0
      h0=D_cyl/2.0d0      !cylinder radius
-     yl=2.0d0*SovD*D_cyl ! box height
+     yl=SovD*D_cyl ! box height
      xl=SovD*D_cyl ! channel length
-     dx0=D_cyl/100.0       !75
-     xbcond_L=1;xbcond_U=1;ybcond_L=2;ybcond_U=2
+     dx0=D_cyl/30.0       !75
+     xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
      
      nb_patches = 4
      allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
@@ -126,15 +126,15 @@ program datgen
      nb_blobs = 1;n_blob_coefs=3
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-     blob_centre(1,:) = (/0.0d0,20.0d0/)  
+     blob_centre(1,:) = (/0.0d0,0.0d0/)  
      do i=1,nb_blobs
         blob_coeffs(i,:) = 0.0d0
         blob_coeffs(i,1) = h0;blob_rotation(i) = 0.0d0
      end do
-     nww=2
-     allocate(wavy_phase(nww),wavy_k(nww),wavy_y0(nww),wavy_sign(nww),wavy_amp(nww))
-     wavy_phase(1)=0.0d0;wavy_k(1) = 2.0d0*pi;wavy_y0(1)=-0.5d0;wavy_sign(1)=1;wavy_amp(1)=0.1d0
-     wavy_phase(2)=0.0d0;wavy_k(2) = 2.0d0*pi;wavy_y0(2)=0.5d0;wavy_sign(2)=-1;wavy_amp(2)=0.1d0     
+     nww=0
+!     allocate(wavy_phase(nww),wavy_k(nww),wavy_y0(nww),wavy_sign(nww),wavy_amp(nww))
+!     wavy_phase(1)=0.0d0;wavy_k(1) = 2.0d0*pi;wavy_y0(1)=-0.5d0;wavy_sign(1)=1;wavy_amp(1)=0.05d0
+!     wavy_phase(2)=0.0d0;wavy_k(2) = 2.0d0*pi;wavy_y0(2)=0.5d0;wavy_sign(2)=-1;wavy_amp(2)=0.05d0     
 
      !! dx0/2.0d0, 1.5d0*dx0
      dxmin = dx0/1.0d0 !!2.0d0
@@ -327,14 +327,14 @@ case(8) !! Minimal unit cell of isometric cylinder array
      yl=sqrt(3.0d0)*S_cyl ! box height
      xl=S_cyl ! channel length
      dx0=D_cyl/60.0d0!499.50       !250
-     xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
+     xbcond_L=1;xbcond_U=1;ybcond_L=2;ybcond_U=2
      
      nb_patches = 4
      allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
      allocate(b_type(nb_patches))
      b_type(:) = (/ 3, 3, 3, 3/)  
-     b_node(1,:) = (/-0.5d0*xl, -0.5d0*yl /)
-     b_node(2,:) = (/0.5d0*xl, -0.5d0*yl /)
+     b_node(1,:) = (/-0.5d0*xl, -0.0d0*yl /)
+     b_node(2,:) = (/0.5d0*xl, -0.0d0*yl /)
      b_node(3,:) = (/0.5d0*xl, 0.5d0*yl /)
      b_node(4,:) = (/-0.5d0*xl, 0.5d0*yl /)
      nb_blobs = 4;n_blob_coefs=12

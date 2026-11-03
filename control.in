@@ -10,7 +10,7 @@
 1.0d0
 
 !! Start and end time (in multiples of L_char/Uchar)
-0.0d0 1.0d2
+0.0d0 2.0d1
 
 !! Output period (in multiples of L_char/U_char), stats output period, tracers output period
 1.0d0 1.0d-2 2.5d-3
@@ -25,10 +25,10 @@
 1.0d0
 
 !! Viscosity ratio (beta)
-0.2d0
+1.0d0
 
 !! sPTT non-linearity (epsilon)
-1.0d-30
+1.0d-3
 
 !! FENE-P maximum extensibility (b, or L2)
 1.0d20
@@ -37,7 +37,7 @@
 1.0d-30
 
 !! Dimensionless polymeric diffusion coefficient (kappa)
-1.0d-4
+1.0d-5
 
 !! Schmidt number
 1.0d2
