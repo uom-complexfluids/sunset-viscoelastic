@@ -10,22 +10,22 @@
 1.0d0
 
 !! Start and end time (in multiples of L_char/Uchar)
-0.0d0 2.0d1
+0.0d0 1.0d3
 
 !! Output period (in multiples of L_char/U_char), stats output period, tracers output period
 1.0d0 1.0d-2 2.5d-3
 
 !! Gravity vector (grav)
-8.0d0 0.0d0 0.0d0
+1.0d0 0.0d0 0.0d0
 
 !! Reynolds number
-1.0d0
+1.0d2
 
 !! Weissenberg number
 1.0d0
 
 !! Viscosity ratio (beta)
-1.0d0
+0.9d0
 
 !! sPTT non-linearity (epsilon)
 1.0d-3
@@ -43,7 +43,7 @@
 1.0d2
 
 !! Mach number
-0.05d0
+0.02d0
 
 !! INFLOWS type (non-reflecting (0), hard (1), inout (2)) and velocity control (fixed (0), variable (1))
 0 1 0.0d0 1.0d0 1.0d0

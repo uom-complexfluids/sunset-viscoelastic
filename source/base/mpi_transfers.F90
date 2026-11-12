@@ -68,6 +68,10 @@ module mpi_transfers
 #endif 
   implicit none
   
+  integer(ikind),dimension(:,:),allocatable :: non_empty_cells_list
+  integer(ikind),dimension(:),allocatable :: cellpart
+  integer(ikind) :: nmax_non_empty,ncx_periodic
+  
 
 contains
 !! ------------------------------------------------------------------------------------------------  
@@ -336,32 +340,15 @@ contains
 !! ------------------------------------------------------------------------------------------------
   subroutine build_halos
      integer(ikind) :: i,suminhalo,k,half_fd_stencil,jproc,jproc_cycle
-     integer(ikind) :: maxhalo_UD,maxhalo_LR,maxhalo_FB
-     real(rkind) :: x,y,ss_local,halo_fac
+     integer(ikind) :: maxhalo_UD,maxhalo_LR,maxhalo_FB,jj,kk,ii
+     real(rkind) :: x,y,ss_local
      integer(ikind),dimension(:,:),allocatable :: halo_lists_tmp_LR,halo_lists_tmp_UD,halo_lists_tmp_FB
-     real(rkind),dimension(:),allocatable :: XL_tmp,XR_tmp,YU_tmp,YD_tmp,ZF_tmp,ZB_tmp
      !! Routine builds a list of nodes which are to be exported as halos for adjacent processors
 
+     !! Build lists of cells used by each processor
+     call processor_cell_lists
 
-     !! Create global arrays of processor spatial limits (XL,XR,YU,YD,ZF,ZB)
-     allocate(XL(nprocs),XR(nprocs),YU(nprocs),YD(nprocs),ZF(nprocs),ZB(nprocs))
-     allocate(XL_tmp(nprocs),XR_tmp(nprocs),YU_tmp(nprocs),YD_tmp(nprocs),ZF_tmp(nprocs),ZB_tmp(nprocs))     
-     XL_tmp=zero;XR_tmp=zero;YU_tmp=zero;YD_tmp=zero;ZF_tmp=zero;ZB_tmp=zero
-     XL_tmp(iproc+1)=XL_thisproc;XR_tmp(iproc+1)=XR_thisproc
-     YU_tmp(iproc+1)=YU_thisproc;YD_tmp(iproc+1)=YD_thisproc     
-     ZF_tmp(iproc+1)=ZF_thisproc;ZB_tmp(iproc+1)=ZB_thisproc              
-     call MPI_ALLREDUCE(XL_tmp,XL,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)
-     call MPI_ALLREDUCE(XR_tmp,XR,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)               
-     call MPI_ALLREDUCE(YU_tmp,YU,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)               
-     call MPI_ALLREDUCE(YD_tmp,YD,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)               
-     call MPI_ALLREDUCE(ZF_tmp,ZF,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)               
-     call MPI_ALLREDUCE(ZB_tmp,ZB,nprocs,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierror)               
-     deallocate(XL_tmp,XR_tmp,YU_tmp,YD_tmp,ZF_tmp,ZB_tmp)
-                  
-
-
-     !! How much extra?
-     halo_fac = 2.0d0
+                 
      
      !! Half the FD stencil (for FB halos)
      half_fd_stencil = ij_count_fd/2
@@ -374,75 +361,48 @@ contains
      allocate(inhalo_LR(2*nprocsY),inhalo_UD(2));inhalo_LR=0;inhalo_UD=0
      allocate(nhalo_FB(2),inhalo_FB(2));nhalo_FB=0;inhalo_FB=0
      
-     !! Build halo UP
-     if(iproc_S_UD(1).ge.0) then
-        do i=1,np
-           y=rp(i,2);ss_local = halo_fac*ss*h(i)      
-           if(abs(y-YU_thisproc).le.ss_local) then     
-              nhalo_UD(1) = nhalo_UD(1) + 1
-              halo_lists_tmp_UD(nhalo_UD(1),1) = i              
-           end if
-        end do
-     end if
 
-     !! Build halo DOWN     
-     if(iproc_S_UD(2).ge.0)then            
-        do i=1,np
-           y=rp(i,2);ss_local = halo_fac*ss*h(i)
-           if(abs(y-YD_thisproc).le.ss_local) then
-              nhalo_UD(2) = nhalo_UD(2) + 1
-              halo_lists_tmp_UD(nhalo_UD(2),2) = i              
-           end if
-        end do           
-     end if     
+     !! Build halo UP/DOWN
+     do k=1,2
+        if(iproc_S_UD(k).ge.0) then
+           jproc = iproc_S_UD(k) !! Index of processor we'll send this halo to
+           do i=1,np                      !! Loop over all particles
+              kk = cellpart(i)
+              do ii=1,nmax_non_empty
+                 if(kk.eq.non_empty_cells_list(jproc+1,ii)) then  !! Is this particle in a non-empty cell
+                    nhalo_UD(k) = nhalo_UD(k) + 1
+                    halo_lists_tmp_UD(nhalo_UD(k),k) = i
+                 end if
+              end do
+           end do
+        end if
+     end do
 
-     !! Build halos LEFT
-     do k=1,nprocsY
+     !! Build halos LEFT/RIGHT
+     do k=1,2*nprocsY
         if(iproc_S_LR(k).ge.0) then         
            jproc = iproc_S_LR(k);jproc_cycle=0            !! Index of neighbouring processor
-           if(YU(jproc+1).lt.YD(jproc+1)) jproc_cycle=1   !! Neighbouring processor is bottom of its column
            do i=1,np
-              x=rp(i,1);y=rp(i,2);ss_local = halo_fac*ss*h(i)      
-              if(abs(x-XL_thisproc).le.ss_local) then   !! If at left side
-                 if(jproc_cycle.eq.0) then 
-                    if(y.le.YU(jproc+1)+ss_local.and.y.ge.YD(jproc+1)-ss_local)then  !! AND for normal proc
-                       nhalo_LR(k) = nhalo_LR(k) + 1
-                       halo_lists_tmp_LR(nhalo_LR(k),k) = i
-                    end if
-                 else
-                    if(y.le.YU(jproc+1)+ss_local.or.y.ge.YD(jproc+1)-ss_local)then  !! OR for cyclic proc
-                       nhalo_LR(k) = nhalo_LR(k) + 1
-                       halo_lists_tmp_LR(nhalo_LR(k),k) = i                      
-                    end if
+              kk=cellpart(i)
+              do ii=1,nmax_non_empty
+                 if(kk.eq.non_empty_cells_list(jproc+1,ii)) then  !! Is this particle in a non-empty cell
+                    nhalo_LR(k) = nhalo_LR(k) + 1
+                    halo_lists_tmp_LR(nhalo_LR(k),k) = i
                  end if
-              end if
+                 !! Add in periodicity
+                 if(kk+ncx_periodic.eq.non_empty_cells_list(jproc+1,ii)) then  !! Is this particle in a non-empty cell
+                    nhalo_LR(k) = nhalo_LR(k) + 1
+                    halo_lists_tmp_LR(nhalo_LR(k),k) = i
+                 end if                 
+                 if(kk-ncx_periodic.eq.non_empty_cells_list(jproc+1,ii)) then  !! Is this particle in a non-empty cell
+                    nhalo_LR(k) = nhalo_LR(k) + 1
+                    halo_lists_tmp_LR(nhalo_LR(k),k) = i
+                 end if                 
+              end do
            end do
         end if
      end do
-
-     !! Build halos RIGHT
-     do k=nprocsY+1,2*nprocsY
-        if(iproc_S_LR(k).ge.0) then           
-           jproc = iproc_S_LR(k);jproc_cycle=0 !! Index of neighbouring processor
-           if(YU(jproc+1).lt.YD(jproc+1)) jproc_cycle=1 !! Neighbouring processor is bottom of its column
-           do i=1,np
-              x=rp(i,1);y=rp(i,2);ss_local = halo_fac*ss*h(i)      
-              if(abs(x-XR_thisproc).le.ss_local) then    !! If at left side
-                 if(jproc_cycle.eq.0) then
-                    if(y.le.YU(jproc+1)+ss_local.and.y.ge.YD(jproc+1)-ss_local)then !! AND for normal proc
-                       nhalo_LR(k) = nhalo_LR(k) + 1
-                       halo_lists_tmp_LR(nhalo_LR(k),k) = i
-                    end if
-                 else
-                    if(y.le.YU(jproc+1)+ss_local.or.y.ge.YD(jproc+1)-ss_local)then !! OR for cyclic proc
-                       nhalo_LR(k) = nhalo_LR(k) + 1
-                       halo_lists_tmp_LR(nhalo_LR(k),k) = i
-                    end if                 
-                 end if
-              end if
-           end do
-        end if
-     end do
+                               
      
      !! Build halo FORWARD
      if(iproc_S_FB(1).ge.0) then
@@ -1241,7 +1201,7 @@ contains
 !! ------------------------------------------------------------------------------------------------
 #ifdef mp
   subroutine global_reduce_sum(phi)
-     !! Routine to perform MPI reductions. If not using mpi, it does nothing.
+     !! Routine to perform MPI reductions. 
      real(rkind),intent(inout) :: phi
      real(rkind) :: phi_local
      segment_tstart = omp_get_wtime()     
@@ -1257,9 +1217,27 @@ contains
      segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
      return
   end subroutine global_reduce_sum
+!! ------------------------------------------------------------------------------------------------  
+  subroutine global_reduce_sum_int(phi)
+     !! Routine to perform MPI reductions.
+     integer(ikind),intent(inout) :: phi
+     integer(rkind) :: phi_local
+     segment_tstart = omp_get_wtime()     
+     
+     !! Copy phi to local
+     phi_local = phi
+     
+     !! Do MPI reduction
+     call MPI_ALLREDUCE(phi_local,phi,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD,ierror)              
+     
+     !! Profiling
+     segment_tend = omp_get_wtime()
+     segment_time_local(7) = segment_time_local(7) + segment_tend - segment_tstart    
+     return
+  end subroutine global_reduce_sum_int  
 !! ------------------------------------------------------------------------------------------------
   subroutine global_reduce_min(phi)
-     !! Routine to perform MPI reductions. If not using mpi, it does nothing.
+     !! Routine to perform MPI reductions.
      real(rkind),intent(inout) :: phi
      real(rkind) :: phi_local
      segment_tstart = omp_get_wtime()     
@@ -1278,7 +1256,7 @@ contains
   end subroutine global_reduce_min
 !! ------------------------------------------------------------------------------------------------
   subroutine global_reduce_max(phi)
-     !! Routine to perform MPI reductions. If not using mpi, it does nothing.
+     !! Routine to perform MPI reductions.
      real(rkind),intent(inout) :: phi
      real(rkind) :: phi_local
      segment_tstart = omp_get_wtime()     
@@ -1297,7 +1275,7 @@ contains
   end subroutine global_reduce_max
 !! ------------------------------------------------------------------------------------------------  
   subroutine global_reduce_maxint(phi)
-     !! Routine to perform MPI reductions. If not using mpi, it does nothing.
+     !! Routine to perform MPI reductions. 
      integer(ikind),intent(inout) :: phi
      integer(ikind) :: phi_local
      segment_tstart = omp_get_wtime()     
@@ -1315,5 +1293,170 @@ contains
   end subroutine global_reduce_maxint
 #endif
 !! ------------------------------------------------------------------------------------------------
+!! Particles-in-cells routines for halo generation...
+!! ------------------------------------------------------------------------------------------------
+  subroutine processor_cell_lists
+     real(rkind) :: sizeX,sizeY
+     integer(ikind) :: ic,icx,icy,jc,nsheet
+     integer(ikind), dimension(:), allocatable :: nc
+     integer(ikind), dimension(:), allocatable :: ic_count
+     integer(ikind) :: ncx,ncy,nct
+     real(rkind) :: xmaxt,xmint,ymaxt,ymint,unoss
+     integer(ikind),dimension(:,:),allocatable :: ic_link   
+     real(rkind) :: ddx,ddy
+     integer(ikind) :: nc_ii_max, k, icell, jcell, ii,jj,iflag,kk   
+     
+     !! -------------------------------------------------------
+     !! Create cells
+     
+     !! Size of domain in X,Y
+     sizeX = xmax - xmin;sizeY = ymax - ymin
+  
+     !! cell size and max/min domain size 
+     !! N.B. cell grid the domain +- sizeX,sizeY, to account for tricky bits in MPI periodicity
+     unoss = one/(1.0d0*sup_size)
+     xmaxt = xmax + sizeX;xmint = xmin - sizeX
+     ymaxt = ymax + sizeY;ymint = ymin - sizeY
+     
+     !! Number of cells in each direction
+     ncx = int((xmaxt-xmint)*unoss) + 1     
+     ncy = int((ymaxt-ymint)*unoss) + 1
+     
+     !! Number of cells by which to adjust for periodicity in X
+     ncx_periodic = int((xmax-xmin)*unoss) + 1
+     
+     nct=ncx*ncy ! Number of cells in a XY sheet
+     nsheet = ncx*ncy
+   
+     !! Allocate the cell-link-lists to create a list of neighbour cells for each cell.
+     allocate(ic_count(nct),ic_link(nct,9),nc(nct))
+     allocate(cellpart(np));cellpart=0_ikind
+ 
+     !! Loop over all cells
+     icx=0;icy=1
+     do ic = 1,nct
+        icx = icx+1
+        if(icx.gt.ncx)then
+           icx=1
+           icy = icy+1
+        end if
+
+        ! This cell
+        ic_count(ic)=1;ic_link(ic,1)=ic
+       
+        if(icx+1.le.ncx)then
+           !! East cell
+           jc = ic+1
+           ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           if(icy+1.le.ncy)then
+              !! NE cell
+              jc = ic + ncx + 1    
+              ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           end if          
+           if(icy-1.ge.1)then
+              !! SE cell
+              jc = ic - ncx + 1
+              ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           end if
+        end if       
+        if(icx-1.ge.1)then
+           !! West cell
+           jc = ic - 1
+           ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           if(icy+1.le.ncy)then
+              !! NW cell
+              jc = ic + ncx - 1
+              ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           end if          
+           if(icy-1.ge.1)then
+              !! SW cell
+              jc = ic - ncx - 1
+              ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+           end if         
+        end if       
+        if(icy+1.le.ncy) then
+           !! North cell
+           jc = ic + ncx
+           ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+        end if      
+        if(icy-1.ge.1)then
+           !! South cell
+           jc = ic - ncx
+           ic_count(ic)=ic_count(ic)+1;ic_link(ic,ic_count(ic))=jc
+        end if          
+     end do
+     
+     !! Up to now, everything is the same on each processor
+     !! Next we'll count the number of particles in each cell for each processor   
+
+    nc=0_ikind  ! nc(i,mkind)=0
+    nc_ii_max = 0
+
+    !$omp parallel do private(ddx,ddy,icell,jcell,ii) reduction(+:nc) reduction(max:nc_ii_max)
+    do k=1,np    ! loop over all particles
+       ddx = rp(k,1) - xmint    ! find x,y of particle if origin at BL corner of domain
+       ddy = rp(k,2) - ymint
+  
+       icell = int( ddx *unoss) + 1       !! Cell label in x
+       jcell = int( ddy *unoss) + 1       !! Cell label in y
+       ii = icell + (jcell - 1)*ncx        !! ii is linear cell position in the matrix of cells
+
+       nc(ii) = nc(ii)+1     ! add 1 to the number of particles in this cell
+       !! If the number of particles in a cell is greater than
+       !! some upper limit then stop
+       nc_ii_max = nc(ii)  ! ensure nc_ii_max is max(nc(ii) for all ii
+       cellpart(k)=ii             !! the index of the cell in which particle i is       
+    end do
+    !$omp end parallel do
+
+    !! Array for processor non-empty
+    allocate(non_empty_cells_list(Nprocs,nct))
+    non_empty_cells_list=0_ikind
+
+    !! loop over all cells and create a list of those which are a) not empty, or b) neighbour non-empty cells
+    k=0
+    do ii=1, nct
+       if(nc(ii).ne.0) then  !! Cell is not empty
+          k=k+1
+          non_empty_cells_list(iproc+1,k)=ii   
+       end if
+    end do
+    do ii=1,nct
+       if(nc(ii).eq.0) then !! Cell is empty
+          iflag=0
+          do jj=1,ic_count(ii)  !! Loop through it's neighbours
+             kk=ic_link(ii,jj)
+             if(nc(kk).ne.0) then !! Has a non-empty neighbour             
+                iflag = 1
+             end if             
+          end do
+          if(iflag.eq.1) then !! If it has a non-empty neighbour, add it
+             k=k+1
+             non_empty_cells_list(iproc+1,k)=ii
+          end if
+       end if
+    end do
+    !! Largest number of non-empty cells:
+    nmax_non_empty = k
+    call global_reduce_maxint(nmax_non_empty) 
+
+    !! Copy across processors    
+    do ii=1,Nprocs
+       do kk=1,nmax_non_empty
+          call global_reduce_sum_int(non_empty_cells_list(ii,kk))
+       end do
+    end do
+    
+    !! We now have a list of the non-empty cells (and their neighbours) for each processor.
+    if(iproc.eq.0) then
+       do ii=1,Nprocs
+          write(53,*) non_empty_cells_list(ii,1:nmax_non_empty)
+       end do
+       flush(53)
+    endif
+    
+    write(6,*) "cells:",nct,nmax_non_empty
+
+  end subroutine processor_cell_lists
 end module mpi_transfers
 

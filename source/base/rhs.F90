@@ -59,6 +59,7 @@ contains
      rhs_ro=zero;rhs_rou=zero;rhs_rov=zero;rhs_row=zero
      rhs_xx=zero;rhs_xy=zero;rhs_yy=zero
      rhs_xz=zero;rhs_yz=zero;rhs_zz=zero
+     rhs_roY=zero
      
      !! Calculate derivatives of primary variables
      allocate(gradro(npfb,ithree));gradro=zero  
@@ -99,7 +100,9 @@ contains
      !! Only call conformation RHS if non-Newtonian
      call calc_rhs_cholesky
 #endif
+#ifdef mltspc
      call calc_rhs_roY
+#endif     
 
  
      !! Evaluate RHS for boundaries
@@ -860,8 +863,7 @@ contains
         
      !! Deallocate any stores no longer required    
      deallocate(lapYspec,Y_thisspec)
-   
-          
+             
      return
   end subroutine calc_rhs_roY      
 !! ------------------------------------------------------------------------------------------------
@@ -956,7 +958,9 @@ contains
 #endif     
 
      !! Filter mass fraction
+#ifdef mltspc     
      call calc_filtered_var(roY)
+#endif     
 
 #ifndef newt
 

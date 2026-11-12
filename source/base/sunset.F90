@@ -42,7 +42,6 @@ program sunset
   !! Adapt the stencils by reducing h (only if not restarting)
 #ifndef restart  
   call adapt_stencils
-!  call grow_stencils
 #endif  
 
   !! Shrink the halos to fit, and finalise building the domain
@@ -77,8 +76,8 @@ program sunset
   do while (time.le.time_end)
 
      !! Output, conditionally: at start, subsequently every dt_out
-     if(itime.eq.0.or.time.gt.n_out*dt_out) then 
-!     if(itime.eq.0.or.mod(itime,1).eq.0)then
+!     if(itime.eq.0.or.time.gt.n_out*dt_out) then 
+     if(itime.eq.0.or.mod(itime,1).eq.0)then
         n_out = n_out + 1
         call output_layer(n_out)        
      end if     

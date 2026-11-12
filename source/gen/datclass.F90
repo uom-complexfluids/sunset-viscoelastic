@@ -19,12 +19,12 @@ program datgen
   real(rkind) :: x,y
 
   integer ipart,nbtot
-  integer i,j,icha,nn,ve_model,ii,jj
+  integer i,j,icha,nn,ve_model,ii,jj,iwk
   double precision h0,r_mag,yl,D_cyl,S_cyl,SovD,xhat,yhat,porous_x,porous_y,porous_phi
   integer xbcond_L,xbcond_U,ybcond_L,ybcond_U
   
   double precision :: a0,a1,a2,a3,a4,a5 !! NACA coefficients
-  double precision :: temp,tmp2,tmp
+  double precision :: temp,tmp2,tmp,rwk
   real(rkind),dimension(2) :: tmpN,rn
   integer(ikind) :: iround,nround,nsearch,ipartrow,ipartrowm1,nnear,npdps,idown,iup,ibc
   logical :: keepgoing,keepgoing2,skip,place_blob
@@ -37,6 +37,7 @@ program datgen
   real(rkind),dimension(5) :: pdp_x_new,pdp_y_new
   real(rkind) :: thup,thdown,th_increment
   integer(ikind) :: npdps_new,inew,block_left,block_right,block_new,block_delete,block_end
+  real(rkind) :: Rscale
 
   
   
@@ -46,6 +47,7 @@ program datgen
   write(*,*) 'Input test case number: '
   read(*,*) itest
 
+  Rscale=1.0d0
 
   select case (itest) 
 !! ------------------------------------------------------------------------------------------------
@@ -110,10 +112,11 @@ program datgen
      SovD = 2.0d0!sqrt(pi/2.0d0)
      D_cyl = 1.0d0
      h0=D_cyl/2.0d0      !cylinder radius
-     yl=SovD*D_cyl ! box height
-     xl=SovD*D_cyl ! channel length
-     dx0=D_cyl/30.0       !75
+     yl=2.0d0*SovD*D_cyl ! box height
+     xl=D_cyl ! channel length
+     dx0=D_cyl/150.0       !75
      xbcond_L=1;xbcond_U=1;ybcond_L=1;ybcond_U=1
+     Rscale = 5.0635d0
      
      nb_patches = 4
      allocate(b_node(nb_patches,2),b_edge(nb_patches,2))
@@ -126,19 +129,28 @@ program datgen
      nb_blobs = 1;n_blob_coefs=3
      allocate(blob_centre(nb_blobs,2),blob_coeffs(nb_blobs,n_blob_coefs),blob_rotation(nb_blobs),blob_invert(nb_blobs))
      blob_invert(:)=0
-     blob_centre(1,:) = (/0.0d0,0.0d0/)  
+     blob_centre(1,:) = (/0.0d0,20.0d0/)  
      do i=1,nb_blobs
         blob_coeffs(i,:) = 0.0d0
         blob_coeffs(i,1) = h0;blob_rotation(i) = 0.0d0
      end do
-     nww=0
-!     allocate(wavy_phase(nww),wavy_k(nww),wavy_y0(nww),wavy_sign(nww),wavy_amp(nww))
-!     wavy_phase(1)=0.0d0;wavy_k(1) = 2.0d0*pi;wavy_y0(1)=-0.5d0;wavy_sign(1)=1;wavy_amp(1)=0.05d0
-!     wavy_phase(2)=0.0d0;wavy_k(2) = 2.0d0*pi;wavy_y0(2)=0.5d0;wavy_sign(2)=-1;wavy_amp(2)=0.05d0     
+     nww=2;nwwk=7
+     open(unit=191,file="wavy_fcoefs.in")
+     read(191,*) nwwk     
+     allocate(wavy_y0(nww),wavy_sign(nww),wavy_x0(nww),wavy_cos_amp(nww,nwwk))
+     wavy_y0(1)=-0.0*sin(pi/12);wavy_x0(1)=0.0d0;wavy_sign(1)=1;
+     wavy_y0(2)=1.0*sin(pi/12);wavy_x0(2)=0.5d0;wavy_sign(2)=-1;
+     do iwk=1,nwwk
+        read(191,*) wavy_cos_amp(1,iwk)
+     end do
+     wavy_cos_amp(1,:)=-1.0d0*wavy_cos_amp(1,:)
+     do i=2,nww
+        wavy_cos_amp(i,:)=-wavy_cos_amp(1,:)        
+     end do
 
      !! dx0/2.0d0, 1.5d0*dx0
      dxmin = dx0/1.0d0 !!2.0d0
-     dx_wall=dxmin;dx_in=1.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
+     dx_wall=dxmin;dx_in=2.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin      
 !! ------------------------------------------------------------------------------------------------
   case(3) !! Kolmogorov flow (currently set for Miguel's work)
@@ -662,7 +674,11 @@ if(itest.ne.0) then
            
            !! Are we the wrong side of the line
            do i=1,nww
-              temp = wavy_y0(i) + wavy_amp(i)*sin(wavy_k(i)*x + wavy_phase(i))
+              temp = wavy_y0(i)
+              do iwk=1,nwwk
+                 rwk=pi*dble(iwk)
+                 temp = temp + wavy_cos_amp(i,iwk)*cos(rwk*(x-wavy_x0(i)))
+              end do
               if(wavy_sign(i).eq.1) then !! Omit particles below line
                  if(y.le.temp) then
                     keepgoing = .false.
@@ -812,14 +828,14 @@ endif
   
   !!
   open(13,file='./IPART')
-  write(13,*) nb,npfb,maxval(dxp(1:npfb)),minval(dxp(1:npfb))
-  write(13,*) xb_min,xb_max,yb_min,yb_max
+  write(13,*) nb,npfb,Rscale*maxval(dxp(1:npfb)),Rscale*minval(dxp(1:npfb))
+  write(13,*) Rscale*xb_min,Rscale*xb_max,Rscale*yb_min,Rscale*yb_max
   write(13,*) xbcond_L,xbcond_U,ybcond_L,ybcond_U
   do i=1,npfb
      if(node_type(i).ge.0.and.node_type(i).le.2) then
-        write(13,*) i,xp(i), yp(i),node_type(i),xnorm(i),ynorm(i),dxp(i)
+        write(13,*) i,Rscale*xp(i),Rscale*yp(i),node_type(i),xnorm(i),ynorm(i),Rscale*dxp(i)
      else
-        write(13,*) i,xp(i), yp(i),999,0.0d0,0.0d0,dxp(i)
+        write(13,*) i,Rscale*xp(i),Rscale*yp(i),999,0.0d0,0.0d0,Rscale*dxp(i)
      end if
   end do
   close(13)
@@ -1195,8 +1211,8 @@ end subroutine quicksort
      use global_variables 
 
      implicit none
-     integer(ikind) :: ipart,iw,ibc
-     real(rkind) :: x,y,tmp2,delx,dely,dydx,dxlocal
+     integer(ikind) :: ipart,iw,ibc,iwk
+     real(rkind) :: x,y,tmp2,delx,dely,dydx,dxlocal,rwk
      real(rkind) :: Swall
    
      ipart=nb
@@ -1205,18 +1221,31 @@ end subroutine quicksort
      if(nww.ne.0)then
         do iw=1,nww
                     
-              !! Numerical Estimate approx number of nodes along the wall (easier than doing elliptic integrals)
+              !! Numerically Estimate approx number of nodes along the wall (easier than doing elliptic integrals)
               !! Location on left x-boundary
-              Swall = 0.0d0;x = xb_min;y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
-              do while(x.le.xb_max)              
-                 dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+              Swall = 0.0d0;x = xb_min;
+              y = wavy_y0(iw)
+              do iwk=1,nwwk
+                 rwk=pi*dble(iwk)
+                 y = y + wavy_cos_amp(iw,iwk)*cos(rwk*(x-wavy_x0(iw)))
+              end do
+              do while(x.le.xb_max)       
+                 dydx=0.0d0
+                 do iwk=1,nwwk                  
+                    rwk=pi*dble(iwk)
+                    dydx = dydx - rwk*wavy_cos_amp(iw,iwk)*sin(rwk*(x-wavy_x0(iw)))
+                 end do
                  
                  !! Move along curve a tiny bit - how far along x?
                  delx = 0.001*dx_wall/sqrt(1.0d0 + dydx**2.0d0)
                  
-                 !! New position
+                 !! New position (and dely)
                  x = x + delx;
-                 dely = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw)) - y
+                 dely = wavy_y0(iw) - y
+                 do iwk=1,nwwk
+                    rwk=pi*dble(iwk)
+                    dely = dely + wavy_cos_amp(iw,iwk)*cos(rwk*(x-wavy_x0(iw)))
+                 end do
                  y=y+dely
                  
                  !! Increment length
@@ -1228,31 +1257,53 @@ end subroutine quicksort
               dxlocal = Swall/dble(nb)                      
 
               !! Location on left x-boundary
-              x = xb_min;y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
-              dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+              x = xb_min;              
+              y = wavy_y0(iw);dydx=0.0d0
+              do iwk=1,nwwk
+                 rwk=pi*dble(iwk)
+                 y = y + wavy_cos_amp(iw,iwk)*cos(rwk*(x-wavy_x0(iw)))
+                 dydx = dydx - rwk*wavy_cos_amp(iw,iwk)*sin(rwk*(x-wavy_x0(iw)))
+              end do
               
               !! Location of first point: -0.5dx along curve
               x = xb_min - 0.5d0*dxlocal/sqrt(1.0d0 + dydx**2.0d0)
-              y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+              y = wavy_y0(iw)
+              do iwk=1,nwwk
+                 rwk=pi*dble(iwk)
+                 y = y + wavy_cos_amp(iw,iwk)*cos(rwk*(x-wavy_x0(iw)))
+              end do
               
               do while(x.le.xb_max)              
                  
                  !! Find gradient
-                 dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))
+                 dydx=0.0d0
+                 do iwk=1,nwwk                  
+                    rwk=pi*dble(iwk)
+                    dydx = dydx - rwk*wavy_cos_amp(iw,iwk)*sin(rwk*(x-wavy_x0(iw)))
+                 end do
                  
                  !! Move along curve - how far along x?
                  delx = dxlocal/sqrt(1.0d0 + dydx**2.0d0)
                  
                  !! New position
                  x = x + delx;
-                 y = wavy_y0(iw) + wavy_amp(iw)*sin(wavy_k(iw)*x + wavy_phase(iw))
+                 y = wavy_y0(iw)
+                 do iwk=1,nwwk
+                    rwk=pi*dble(iwk)
+                    y = y + wavy_cos_amp(iw,iwk)*cos(rwk*(x-wavy_x0(iw)))
+                 end do
 
                  !! If the position is within the domain, create a particle
                  if(x.ge.xb_min.and.x.lt.xb_max.and.y.ge.yb_min.and.y.lt.yb_max)then              
                     ipart = ipart + 1 
                     xp(ipart)=x;yp(ipart)=y;dxp(ipart)=dx_wall
                                 
-                    dydx = wavy_amp(iw)*wavy_k(iw)*cos(wavy_k(iw)*x + wavy_phase(iw))                                
+                    !! Find gradient
+                    dydx=0.0d0
+                    do iwk=1,nwwk                  
+                       rwk=pi*dble(iwk)
+                       dydx = dydx - rwk*wavy_cos_amp(iw,iwk)*sin(rwk*(x-wavy_x0(iw)))
+                    end do
                     tmp2 = -atan(dydx)
         
                     xnorm(ipart) = sin(tmp2)

@@ -342,7 +342,7 @@ contains
                        cxz(i),cyz(i),czz(i),roY(i)/ro(i)      
     
 #else
-           write(20,*) tmpro,u(i),v(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),roY(i)/ro(i)
+           write(20,*) tmpro,u(i),v(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),dble(ij_count(i))!roY(i)/ro(i)
 !          write(20,*) tmpro,u(i),v(i),tmpVort,tmpro,alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i)
 #endif
         end do

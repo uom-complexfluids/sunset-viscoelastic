@@ -19,7 +19,7 @@ program redecomp
    double precision :: emax_np1,emax_n,emax_nm1,dt,ztmp  
    
    !! Fluid properties::
-   double precision,dimension(:),allocatable :: ro,u,v,w,cxx,cxy,cyy,cxz,cyz,czz
+   double precision,dimension(:),allocatable :: ro,u,v,w,cxx,cxy,cyy,cxz,cyz,czz,roY
 
    write(6,*) "What number output would you like to use?"
    read(5,*) Nout  
@@ -53,6 +53,7 @@ program redecomp
    !! Allocate space
    allocate(x(npfb),y(npfb),z(npfb),h(npfb),s(npfb),xn(npfb),yn(npfb),node_type(npfb),gi(npfb),h_small(npfb))
    allocate(ro(npfb),u(npfb),v(npfb),w(npfb),cxx(npfb),cxy(npfb),cyy(npfb),cxz(npfb),cyz(npfb),czz(npfb))
+   allocate(roY(npfb))
    
    
    !! Load main IPART data
@@ -140,10 +141,10 @@ program redecomp
          h(locind) = hh
          h_small(locind) = hhs
 #ifndef dim3
-         read(90,*) ro(j),u(j),v(j),dummy,dummy,dummy,cxx(j),cxy(j),cyy(j),czz(j)        
+         read(90,*) ro(j),u(j),v(j),dummy,dummy,dummy,cxx(j),cxy(j),cyy(j),czz(j),roY(j)        
 #else
          z(j) = ztmp
-         read(90,*) ro(j),u(j),v(j),w(j),dummy,dummy,dummy,cxx(j),cxy(j),cyy(j),cxz(j),cyz(j),czz(j)        
+         read(90,*) ro(j),u(j),v(j),w(j),dummy,dummy,dummy,cxx(j),cxy(j),cyy(j),cxz(j),cyz(j),czz(j),roY(j)        
 #endif         
 
 
@@ -177,20 +178,20 @@ program redecomp
          ii=ii+1
 #ifndef dim3         
          write(80,*) gi(ii),x(ii),y(ii),s(ii),h(ii),h_small(ii),node_type(ii)
-         write(90,*) ro(ii),u(ii),v(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),czz(ii)                 
+         write(90,*) ro(ii),u(ii),v(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),czz(ii),roY(ii)                 
 #else
          write(80,*) gi(ii),x(ii),y(ii),z(ii),s(ii),h(ii),h_small(ii),node_type(ii)
-         write(90,*) ro(ii),u(ii),v(ii),w(i),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),cxz(ii),cyz(ii),czz(ii)                 
+         write(90,*) ro(ii),u(ii),v(ii),w(i),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),cxz(ii),cyz(ii),czz(ii),roY(ii)  
 #endif         
          if(node_type(ii).ge.0.and.node_type(ii).le.2) then
             do j=1,4
                ii=ii+1
 #ifndef dim3
                write(80,*) gi(ii),x(ii),y(ii),s(ii),h(ii),h_small(ii),node_type(ii)
-               write(90,*) ro(ii),u(ii),v(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),czz(ii)                                
+               write(90,*) ro(ii),u(ii),v(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),czz(ii),roY(ii)                                
 #else
                write(80,*) gi(ii),x(ii),y(ii),z(ii),s(ii),h(ii),h_small(ii),node_type(ii)
-               write(90,*) ro(ii),u(ii),v(ii),w(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),cxz(ii),cyz(ii),czz(ii)                                
+               write(90,*) ro(ii),u(ii),v(ii),w(ii),dummy,dummy,dummy,cxx(ii),cxy(ii),cyy(ii),cxz(ii),cyz(ii),czz(ii),roY(ii)                                
 #endif               
             end do
          end if

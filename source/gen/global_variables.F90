@@ -21,9 +21,12 @@
       real(rkind),dimension(:),allocatable :: blob_rotation
       integer(ikind),dimension(:),allocatable :: blob_invert
       integer(ikind) :: n_blob_coefs
-      real(rkind),dimension(:),allocatable :: wavy_phase,wavy_k,wavy_y0,wavy_amp
+      
+      !! wavy walls
+      real(rkind),dimension(:),allocatable :: wavy_y0,wavy_x0
+      real(rkind),dimension(:,:),allocatable :: wavy_cos_amp
       integer(ikind),dimension(:),allocatable :: wavy_sign
-      integer(ikind) :: nww
+      integer(ikind) :: nww,nwwk
       
       !! Blob-perimeter
       real(rkind),dimension(:),allocatable :: Sblob
