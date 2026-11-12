@@ -198,38 +198,15 @@ contains
         allocate(gradu(npfb,ithree),gradv(npfb,ithree),gradw(npfb,ithree));gradw=zero
         allocate(vort(npfb),Qcrit(npfb))
 
-!! DEBUG
-!do i=1,np
-!x=rp(i,1);y=rp(i,2);z=sqrt(x*x + y*y) !z holds r
-!fz = (exp(-10.0d0*(z-half)))
-!!u(i) = (one-fz)*cos(two*pi*x)*cos(two*pi*y)
-!! cxx(i) = 10.0d0*cos(two*pi*y)*x*fz*cos(two*pi*x) - two*pi*cos(two*pi*y)*(one-fz)*sin(two*pi*x)
-!u(i) = one-fz
-! v(i) = 10.0*x*fz/z  !! du/dx
-! v(i) = 10.0d0*fz/z - 100.0d0*x*x*fz/z/z - 10.0d0*x*x*fz/z/z/z &
-!      + 10.0d0*fz/z - 100.0d0*y*y*fz/z/z - 10.0d0*y*y*fz/z/z/z    !! lap(u)
-!      u(i) = sin(two*pi*x)
-!      v(i) = -two*pi*two*pi*sin(two*pi*x)
-!!      v(i) = two*pi*cos(two*pi*x)      
-!end do
-
         call calc_gradient(u,gradu)
         call calc_gradient(v,gradv)
 #ifdef dim3
         call calc_gradient(w,gradw)
 #endif     
 
-!! DEBUG
-!        call calc_laplacian(u,Qcrit)
 
         !$omp parallel do 
         do i=1,npfb
-
-!! DEBUG
-! cxx(i) = gradu(i,1)
-! cyy(i)=gradu(i,2)
-! cxy(i) = Qcrit(i)
-
 
 
 #ifdef dim3
@@ -251,11 +228,6 @@ contains
               i=boundary_list(j)
               if(node_type(i).eq.0)then
                  xn = rnorm(i,1);yn = rnorm(i,2)
-
-!! DEBUG
-!   cxx(i) = xn*gradu(i,1) - yn*gradu(i,2)
-!   cyy(i) = yn*gradu(i,1) - xn*gradu(i,2)
-
 
 #ifdef dim3           
                  vort(i) = (gradw(i,2) - (xn*gradv(i,3)-yn*gradu(i,3)))**two &
@@ -306,15 +278,10 @@ contains
         write(20,*) eflow_nm1,sum_eflow,driving_force
         write(20,*) emax_np1,emax_n,emax_nm1,dt   
         write(20,*) "!! end header !!"        
-!! DEBUG
-!fz=zero;z=zero
+
        
         do i=1,np_out_local
-        
-!!DEBUG
-!fz = fz + s(i)*s(i)*(cxy(i)-v(i))**two
-!z=z+s(i)*s(i)
-        
+               
 
            !! Store the density in tmpro
 #ifdef pgrad
@@ -343,17 +310,14 @@ contains
     
 #else
            write(20,*) tmpro,u(i),v(i),tmpVort,Qcrit(i),alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),dble(ij_count(i))!roY(i)/ro(i)
-!          write(20,*) tmpro,u(i),v(i),tmpVort,tmpro,alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i)
+!if(i.le.npfb)then
+!           write(20,*) tmpro,u(i),v(i),tmpVort,one,alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),dble(ij_count(i))!roY(i)/ro(i)
+!else
+!           write(20,*) tmpro,u(i),v(i),tmpVort,zero,alpha_out(i),cxx(i),cxy(i),cyy(i),czz(i),roY(i)/ro(i)
+!endif           
 #endif
         end do
             
-!! DEBUG
-!u=zero;v=zero;cxx=one;cyy=one
-!call global_reduce_sum(fz)
-!call global_reduce_sum(z)
-!write(6,*) iproc,sqrt(fz/z)
-
-
         flush(20)
         close(20)
         if(allocated(vort)) deallocate(vort,Qcrit)    

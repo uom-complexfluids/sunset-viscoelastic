@@ -362,8 +362,23 @@ contains
      allocate(nhalo_FB(2),inhalo_FB(2));nhalo_FB=0;inhalo_FB=0
      
 
-     !! Build halo UP/DOWN
-     do k=1,2
+     !! Build halo UP
+     k=1
+     if(iproc_S_UD(k).ge.0) then
+        jproc = iproc_S_UD(k) !! Index of processor we'll send this halo to
+        do i=1,np                      !! Loop over all particles
+           kk = cellpart(i)
+           do ii=1,nmax_non_empty
+              if(kk.eq.non_empty_cells_list(jproc+1,ii)) then  !! Is this particle in a non-empty cell
+                 nhalo_UD(k) = nhalo_UD(k) + 1
+                 halo_lists_tmp_UD(nhalo_UD(k),k) = i
+              end if
+           end do
+        end do
+     end if
+     !! Build halo DOWN
+     if(NprocsY.gt.2) then
+        k=2
         if(iproc_S_UD(k).ge.0) then
            jproc = iproc_S_UD(k) !! Index of processor we'll send this halo to
            do i=1,np                      !! Loop over all particles
@@ -376,8 +391,9 @@ contains
               end do
            end do
         end if
-     end do
+     end if
 
+     
      !! Build halos LEFT/RIGHT
      do k=1,2*nprocsY
         if(iproc_S_LR(k).ge.0) then         
@@ -1446,16 +1462,7 @@ contains
           call global_reduce_sum_int(non_empty_cells_list(ii,kk))
        end do
     end do
-    
-    !! We now have a list of the non-empty cells (and their neighbours) for each processor.
-    if(iproc.eq.0) then
-       do ii=1,Nprocs
-          write(53,*) non_empty_cells_list(ii,1:nmax_non_empty)
-       end do
-       flush(53)
-    endif
-    
-    write(6,*) "cells:",nct,nmax_non_empty
+        
 
   end subroutine processor_cell_lists
 end module mpi_transfers

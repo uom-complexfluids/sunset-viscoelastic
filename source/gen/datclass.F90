@@ -149,7 +149,7 @@ program datgen
      end do
 
      !! dx0/2.0d0, 1.5d0*dx0
-     dxmin = dx0/1.0d0 !!2.0d0
+     dxmin = dx0/3.0d0 !!2.0d0
      dx_wall=dxmin;dx_in=2.0d0*dx0;dx_out=dx_in  !! dx for solids and in/outs...!! Ratio for scaling far field...
      dx_wallio=dxmin      
 !! ------------------------------------------------------------------------------------------------
